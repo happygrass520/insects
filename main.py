@@ -9,6 +9,8 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from pprint import pprint
 
+from bug_math import VelocityField, precalculate_values
+
 class Insect:
     def __init__(self, startpos):
         self.position = startpos
@@ -19,6 +21,18 @@ class Insect:
         new_x = current_x + move_x
         new_y = current_y + move_y
         new_z = current_z + move_z
+        if new_x < 0:
+            new_x = 0
+        if new_x >= 128:
+            new_x = 127
+        if new_y < 0:
+            new_y = 0
+        if new_y >= 128:
+            new_y = 127
+        if new_z < 0:
+            new_z = 0
+        if new_z >= 128:
+            new_z = 127
         self.position = (new_x, new_y, new_z)
 
 def main():
@@ -32,87 +46,38 @@ def main():
     parser.add_argument('--dimZ', type=int, default=128)
     args = parser.parse_args()
 
-    frames = generate_grid_with_frames(100, args.dimX, args.dimY, args.dimZ)
-    bug1 = Insect((10,10,10))
-    bug2 = Insect((100,100,100))
-    bug3 = Insect((60,40,60))
-    move_bug_1 = (1,1,1)
-    move_bug_2 = (-1,-1,-1)
-    move_bug_3_1 = (-1,1,-1)
-    move_bug_3_2 = (1,-1,1)
-    for frame in range(100):
-        b1_x, b1_y, b1_z = bug1.position
-        b2_x, b2_y, b2_z = bug2.position
-        b3_x, b3_y, b3_z = bug3.position
-        frames[frame, b1_x, b1_y, b1_z] = 1
-        frames[frame, b2_x, b2_y, b2_z] = 1
-        frames[frame, b3_x, b3_y, b3_z] = 1
-        bug1.move(move_bug_1)
-        bug2.move(move_bug_2)
-        if frame < 50:
-            bug3.move(move_bug_3_1)
-        else:
-            bug3.move(move_bug_3_2)
+    no_frames = 200
+    frames = generate_grid_with_frames(no_frames, args.dimX, args.dimY, args.dimZ)
 
+    p_x, p_y, p_z = precalculate_values((128,128,128))
+    v_f = VelocityField(p_x, p_y, p_z)
 
+    no_bugs = 10
+    bugs = []
+    for _ in range(no_bugs):
+        x = random.randint(50, 60)
+        y = random.randint(50, 60)
+        z = random.randint(50, 60)
+        bugs.append(Insect((x,y,z)))
 
-    # save_images_folder_obj = tempfile.TemporaryDirectory()
-    # save_images_folder = save_images_folder_obj.name
+    for frame in range(no_frames):
+        for bug in bugs:
+            # Print buggy
+            x,y,z = bug.position
+            frames[frame, x, y, z] = 1
+            # Move buggy
+            move_x, move_y, move_z = v_f.get_velocity(bug.position)
+            print(f"Float: m_x:{move_x} m_y:{move_y} m_z:{move_z}")
+            move_x = move_x * 100.0
+            move_y = move_y * 100.0
+            move_z = move_z * 100.0
+            print(f"With gain: m_x:{move_x} m_y:{move_y} m_z:{move_z}")
+            move_x, move_y, move_z = v_f.round_velocity_vector((move_x, move_y, move_z))
+            print(f"Rounded: m_x:{move_x} m_y:{move_y} m_z:{move_z}")
+            bug.move((move_x, move_y, move_z))
+        # frame is done!
 
-    # no_of_numbers = len('100')
-    # for frame in range(100):
-        # x_vals, y_vals, z_vals = positions_from_grid(frames[frame])
-        # print(x_vals)
-        # print(y_vals)
-        # print(z_vals)
-        # filename = {}
-        # filename = f"{save_images_folder}/bugs-frame-{frame:0>{no_of_numbers}}.png"
-        # save_image_from_grid(x_vals, y_vals, z_vals, filename=filename)
-        # print(f"Saved frame {frame} as {filename}...")
-
-    # # generate video
-    # print("Using ffmpeg to generate avi video...")
-    # commands = [
-            # 'ffmpeg',
-            # '-y', # Overwrite files without asking
-            # '-r', # Set framerate...
-            # f"25", # ...to seq_length
-            # '-pattern_type', # Regextype ...
-            # 'glob', # ...set to global
-            # f"-i", # Pattern to use when ...
-            # f"'{save_images_folder}/*.png'", # ...looking for image files
-            # f"bugs-video.avi", # Where to save
-            # ]
-    # print(f"Running command '{' '.join(commands)}'")
-    # subprocess.run(' '.join(commands), shell=True)
-    # print("Dont generating video!")
-    # # Clean up if we were using temporary folder for the images
-    # print(f"Cleaning up temporary folder {save_images_folder}...")
-    # save_images_folder_obj.cleanup()
-    # print("Cleanup done.")
-
-    # print("hello")
-    # grid = generate_grid(args.dimX, args.dimY, args.dimZ)
-    # print(grid.shape)
-    # # Insert some random values
-    # # counter = 0
-    # # for x in range(128):
-        # # for y in range(50, 60):
-            # # for z in range(20, 60):
-                # # grid[x,y,z] = 1
-                # # counter += 1
-    # # Simulate 3 insects 
-    # grid[30,45,50] = 1
-    # grid[120,10,67] = 1
-    # grid[60,110,98] = 1
-    # # print(f"Counter: {counter}")
-    # x_vals, y_vals, z_vals = positions_from_grid(grid)
-    # pprint(x_vals)
-    # pprint(y_vals)
-    # pprint(z_vals)
-    # print_image_from_grid(x_vals, y_vals, z_vals)
-    # print_image_from_grid(x_vals, y_vals, z_vals, zoom=0.7)
-    # print_image_from_grid(x_vals, y_vals, z_vals, xy_angle=-10)
+    save_video_from_grid(frames, 25, 'bugs_test_2.avi')
 
 def save_video_from_grid(grid, framerate, video_filename):
     save_images_folder_obj = tempfile.TemporaryDirectory()
