@@ -12,8 +12,9 @@ from pprint import pprint
 from bug_math import VelocityField, precalculate_values
 
 class Insect:
-    def __init__(self, startpos):
+    def __init__(self, startpos, bound):
         self.position = startpos
+        self.bound = bound
 
     def move(self, move_vector):
         current_x, current_y, current_z = self.position
@@ -49,7 +50,9 @@ def main():
     no_frames = 200
     frames = generate_grid_with_frames(no_frames, args.dimX, args.dimY, args.dimZ)
 
-    p_x, p_y, p_z = precalculate_values((128,128,128))
+    # p_x, p_y, p_z = precalculate_values((128,128,128), 256)
+    bound = 256
+    p_x, p_y, p_z = precalculate_values((256,256,256))
     v_f = VelocityField(p_x, p_y, p_z)
 
     no_bugs = 10
@@ -58,7 +61,7 @@ def main():
         x = random.randint(50, 60)
         y = random.randint(50, 60)
         z = random.randint(50, 60)
-        bugs.append(Insect((x,y,z)))
+        bugs.append(Insect((x,y,z), bound))
 
     for frame in range(no_frames):
         for bug in bugs:
@@ -77,7 +80,7 @@ def main():
             bug.move((move_x, move_y, move_z))
         # frame is done!
 
-    save_video_from_grid(frames, 25, 'bugs_test_2.avi')
+    save_video_from_grid(frames, 25, 'bugs_test_256.avi')
 
 def save_video_from_grid(grid, framerate, video_filename):
     save_images_folder_obj = tempfile.TemporaryDirectory()
@@ -115,13 +118,14 @@ def save_video_from_grid(grid, framerate, video_filename):
 
 def save_image_from_grid(x_vals, y_vals, z_vals, elevation=30, xy_angle=-60, zoom=0, filename=None):
     dpi = 10
-    side_size = 12.8
+    # side_size = 12.8
+    side_size = 25.6
     # side_size = 25.6
     fig = plt.figure(figsize=(side_size, side_size), dpi=dpi)
     ax = fig.add_subplot(111, projection='3d')
-    ax.set_xlim(0,128)
-    ax.set_ylim(0,128)
-    ax.set_zlim(0,128)
+    ax.set_xlim(0,256)
+    ax.set_ylim(0,256)
+    ax.set_zlim(0,256)
     # ax.plot(grid[:,0], grid[:,1], grid[:,2])
     # ax.plot(x_vals, y_vals, z_vals)
     # ax.scatter(x_vals, y_vals, z_vals)

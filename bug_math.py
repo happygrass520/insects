@@ -15,12 +15,13 @@ class VelocityField:
         self.p_z = p3
 
     def get_velocity(self, coordinates):
+        bounds = self.p_x.shape[0]
         x,y,z = coordinates
-        if x < 0 or x >= 127:
+        if x < 0 or x >= bounds - 1:
             return (0,0,0)
-        if y < 0 or y >= 127:
+        if y < 0 or y >= bounds - 1:
             return (0,0,0)
-        if z < 0 or z >= 127:
+        if z < 0 or z >= bounds - 1:
             return (0,0,0)
         v_x = (self.p_z[x,y+self.DELTA,z] - self.p_z[x,y-self.DELTA,z])
         v_x = v_x - (self.p_y[x,y,z+self.DELTA] - self.p_y[x,y,z-self.DELTA])
