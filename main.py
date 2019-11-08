@@ -118,8 +118,8 @@ def save_video_from_grid(grid, framerate, video_filename):
 
 def save_image_from_grid(x_vals, y_vals, z_vals, elevation=30, xy_angle=-60, zoom=0, filename=None):
     dpi = 10
-    # side_size = 12.8
-    side_size = 25.6
+    side_size = 12.8
+    # side_size = 25.6
     # side_size = 25.6
     fig = plt.figure(figsize=(side_size, side_size), dpi=dpi)
     ax = fig.add_subplot(111, projection='3d')
