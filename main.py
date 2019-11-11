@@ -73,7 +73,7 @@ def main():
         save_perlin_noise(args.perlin_save_path, 'p_z', p_z, bound_z)
         print("Saved p_z! Done!")
 
-    v_f = VelocityField(p_x, p_y, p_z)
+    v_f = VelocityField(p_x, p_y, p_z, bound_x, bound_y, bound_z)
 
     no_bugs = 10
     bugs = []

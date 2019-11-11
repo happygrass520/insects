@@ -9,12 +9,18 @@ class VelocityField:
     # DELTA = 0.0001
     DELTA = 1
 
-    def __init__(self, p1, p2, p3):
+    def __init__(self, p1, p2, p3, bound_x, bound_y, bound_z):
         self.p_x = p1
         self.p_y = p2
         self.p_z = p3
 
+        self.bound_x = bound_x
+        self.bound_y = bound_y
+        self.bound_z = bound_z
+
     def get_velocity(self, coordinates):
+        normal, alpha = self.get_closest_boundary_normal(coordinates)
+        print(f"normal:{normal} alpha:{alpha}")
         bounds = self.p_x.shape[0]
         x,y,z = coordinates
         if x < 0 or x >= bounds - 1:
@@ -40,6 +46,52 @@ class VelocityField:
     def round_velocity_vector(self, vel_vec):
         x,y,z = vel_vec
         return (int(x), int(y), int(z))
+
+    def get_closest_boundary_normal(self, coordinates):
+        """
+        Returns normal of the closest boundary surface
+        as well as the result from ramp_function
+        To be multiplied/dotted with P to create N
+
+        has to be calculated in each step for each coordinate
+        """
+        # Prepare normals for each boundary surface
+        # TODO not sure about these
+        normal_x_bottom = (0, 0, 1)
+        normal_x_top = (0, 0, -1)
+        normal_y_bottom = (1, 0, 0)
+        normal_y_top = (-1, 0, 0)
+        normal_z_bottom = (0, 1, 0)
+        normal_z_top = (0, -1, 0)
+        x,y,z = coordinates
+        distance_x_top = np.sqrt((self.bound_x - x) ** 2)
+        distance_x_bottom = np.sqrt((0 - x) ** 2)
+        distance_y_top = np.sqrt((self.bound_y - y) ** 2)
+        distance_y_bottom = np.sqrt((0 - y) ** 2)
+        distance_z_top = np.sqrt((self.bound_z - z) ** 2)
+        distance_z_bottom = np.sqrt((0 - z) ** 2)
+        # Create two lists, so that we can use min() to find the normal we want
+        dist_list = {
+                distance_x_top: normal_x_top,
+                distance_x_bottom: normal_x_bottom,
+                distance_y_top: normal_y_top,
+                distance_y_bottom: normal_y_bottom,
+                distance_z_top: normal_z_top,
+                distance_z_bottom: normal_z_bottom,
+                }
+        min_dist = min(dist_list.keys())
+
+        # d_0 is 4 to test (Basically how fast to deteriorate speed when approaching boundary)
+        ramp_fn_arg = min_dist / 4.0
+        return dist_list[min_dist], self.ramp_function(ramp_fn_arg)
+
+    def ramp_function(self, r):
+        """
+        ramp function from the insect flight paper
+        """
+        if r > 1:
+            return 1
+        return ((3.0/8.0) * (r**5)) - ((10.0/8.0) * (r ** 3)) + ((15.0/8.0) * r)
 
 
 def precalculate_values(shape):
