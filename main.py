@@ -13,9 +13,11 @@ from pprint import pprint
 from bug_math import VelocityField, precalculate_values
 
 class Insect:
-    def __init__(self, startpos, bound):
+    def __init__(self, startpos, bound_x, bound_y, bound_z):
         self.position = startpos
-        self.bound = bound
+        self.bound_x = bound_x
+        self.bound_y = bound_y
+        self.bound_z= bound_z
 
     def move(self, move_vector):
         current_x, current_y, current_z = self.position
@@ -23,20 +25,12 @@ class Insect:
         new_x = current_x + move_x
         new_y = current_y + move_y
         new_z = current_z + move_z
-        if new_x < 0 or new_x >= self.bound:
+        if new_x < 0 or new_x >= self.bound_x:
             new_x = current_x - move_x
-        # if new_x >= self.bound:
-            # new_x = current_x - move_x
-        # if new_y < 0:
-        if new_y < 0 or new_y >= self.bound:
+        if new_y < 0 or new_y >= self.bound_y:
             new_y = current_y - move_y
-        # if new_y >= 128:
-            # new_y = 127
-        if new_z < 0 or new_z >= self.bound:
+        if new_z < 0 or new_z >= self.bound_z:
             new_z = current_z - move_z
-            # new_z = 0
-        # if new_z >= 128:
-            # new_z = 127
         self.position = (new_x, new_y, new_z)
 
 def main():
@@ -45,6 +39,7 @@ def main():
     # parser.add_argument('datafile', type=os.path.abspath)
     parser.add_argument('-o', '--output', type=os.path.abspath)
     # parser.add_argument('-f', '--framerate', type=int, default=25)
+    parser.add_argument('--frames', type=int, default=150)
     parser.add_argument('--dimX', type=int, default=128)
     parser.add_argument('--dimY', type=int, default=128)
     parser.add_argument('--dimZ', type=int, default=128)
@@ -52,29 +47,30 @@ def main():
     parser.add_argument('--perlin_save_path', type=os.path.abspath)
     args = parser.parse_args()
 
-    no_frames = 250
-    box = 256
+    no_frames = args.frames
+    bound_x = args.dimX
+    bound_y = args.dimY
+    bound_z = args.dimZ
 
-    bound = 256
     if args.perlin_load_path is None:
         print("No perlin path, calculating new ones")
-        p_x, p_y, p_z = precalculate_values((256,256,256))
+        p_x, p_y, p_z = precalculate_values((bound_x,bound_y,bound_z))
     else:
         print(f"Loading perlin from {args.perlin_load_path}...")
-        p_x = load_perlin_noise(args.perlin_load_path, 'p_x')
+        p_x = load_perlin_noise(args.perlin_load_path, 'p_x', bound_x)
         print("Loaded p_x")
-        p_y = load_perlin_noise(args.perlin_load_path, 'p_y')
+        p_y = load_perlin_noise(args.perlin_load_path, 'p_y', bound_y)
         print("Loaded p_y")
-        p_z = load_perlin_noise(args.perlin_load_path, 'p_z')
+        p_z = load_perlin_noise(args.perlin_load_path, 'p_z', bound_z)
         print("Loaded p_z")
 
     if args.perlin_save_path is not None:
         print(f"Saving perlin to {args.perlin_save_path}...")
-        save_perlin_noise(args.perlin_save_path, 'p_x', p_x)
+        save_perlin_noise(args.perlin_save_path, 'p_x', p_x, bound_x)
         print("Saved p_x...")
-        save_perlin_noise(args.perlin_save_path, 'p_y', p_y)
+        save_perlin_noise(args.perlin_save_path, 'p_y', p_y, bound_y)
         print("Saved p_y...")
-        save_perlin_noise(args.perlin_save_path, 'p_z', p_z)
+        save_perlin_noise(args.perlin_save_path, 'p_z', p_z, bound_z)
         print("Saved p_z! Done!")
 
     v_f = VelocityField(p_x, p_y, p_z)
@@ -82,10 +78,10 @@ def main():
     no_bugs = 10
     bugs = []
     for _ in range(no_bugs):
-        x = random.randint(100, 140)
-        y = random.randint(100, 140)
-        z = random.randint(100, 140)
-        bugs.append(Insect((x,y,z), bound))
+        x = random.randint(0,bound_x)
+        y = random.randint(0,bound_y)
+        z = random.randint(0,bound_z)
+        bugs.append(Insect((x,y,z), bound_x, bound_y, bound_z))
 
     # save_images_folder_obj = tempfile.TemporaryDirectory()
     # save_images_folder = save_images_folder_obj.name
@@ -97,7 +93,7 @@ def main():
     no_of_numbers = len(str(no_frames))
     frame_counter = 0
     for frame in range(no_frames):
-        frame = np.zeros((bound,bound,bound))
+        frame = np.zeros((bound_x,bound_y,bound_z))
         print("Moving bugs...", end='')
         for bug in bugs:
             # Print buggy
@@ -142,19 +138,20 @@ def save_video_from_grid(frames_folder, framerate, video_filename):
     subprocess.run(' '.join(commands), shell=True)
     print("Dont generating video!")
 
-def save_perlin_noise(folder, filename, p):
+def save_perlin_noise(folder, filename, p, dimension):
     if not os.path.isdir(folder):
         os.mkdir(folder)
-    with open(f'{folder}/{filename}.perlin', 'wb') as f:
+    with open(f'{folder}/{filename}_{dimension}.perlin', 'wb') as f:
         pickle.dump(p, f)
 
-def load_perlin_noise(folder, filename):
+def load_perlin_noise(folder, filename, dimension):
     loaded_p = None
-    with open(f'{folder}/{filename}.perlin', 'rb') as f:
+    with open(f'{folder}/{filename}_{dimension}.perlin', 'rb') as f:
         loaded_p = pickle.load(f)
     return loaded_p
 
-def save_image_from_grid(x_vals, y_vals, z_vals, elevation=30, xy_angle=-60, zoom=0, filename=None):
+# def save_image_from_grid(x_vals, y_vals, z_vals, elevation=30, xy_angle=-60, zoom=0, filename=None):
+def save_image_from_grid(x_vals, y_vals, z_vals, elevation=-19, xy_angle=67, zoom=0, filename=None):
     dpi = 10
     side_size = 12.8
     # side_size = 25.6
