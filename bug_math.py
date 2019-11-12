@@ -36,10 +36,6 @@ class VelocityField:
         v_y = v_y - (self.get_N((x+self.DELTA,y,z), a, n)[2] - self.get_N((x-self.DELTA,y,z), a, n)[2])
         v_y = v_y / ( 2.0 * float(self.DELTA) )
 
-        v_z = (self.p_y[x+self.DELTA,y,z] - self.p_y[x-self.DELTA,y,z])
-        v_z = v_z - (self.p_x[x,y+self.DELTA,z] - self.p_x[x,y-self.DELTA,z])
-        v_z = v_z / ( 2.0 * float(self.DELTA) )
-
         v_z = (self.get_N((x+self.DELTA,y,z), a, n)[1] - self.get_N((x-self.DELTA,y,z), a, n)[1])
         v_z = v_z - (self.get_N((x,y+self.DELTA,z), a, n)[0] - self.get_N((x,y-self.DELTA,z), a, n)[0])
         v_z = v_z / ( 2.0 * float(self.DELTA) )
