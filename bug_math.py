@@ -4,10 +4,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
+from pprint import pprint
+
 class VelocityField:
     # Constants for calculating potential
     # DELTA = 0.0001
     DELTA = 1
+    # In the ramp function, this is used to 
+    # amplify the approach to a boundary
+    D_0 = 4.0
 
     def __init__(self, p1, p2, p3, bound_x, bound_y, bound_z):
         self.p_x = p1
@@ -19,29 +24,63 @@ class VelocityField:
         self.bound_z = bound_z
 
     def get_velocity(self, coordinates):
-        normal, alpha = self.get_closest_boundary_normal(coordinates)
-        print(f"normal:{normal} alpha:{alpha}")
-        bounds = self.p_x.shape[0]
+        # normal and alpha from boundary and ramp function
+        n, a = self.get_closest_boundary_normal(coordinates)
         x,y,z = coordinates
-        if x < 0 or x >= bounds - 1:
-            return (0,0,0)
-        if y < 0 or y >= bounds - 1:
-            return (0,0,0)
-        if z < 0 or z >= bounds - 1:
-            return (0,0,0)
-        v_x = (self.p_z[x,y+self.DELTA,z] - self.p_z[x,y-self.DELTA,z])
-        v_x = v_x - (self.p_y[x,y,z+self.DELTA] - self.p_y[x,y,z-self.DELTA])
+
+        v_x = (self.get_N((x,y+self.DELTA,z), a, n)[2] - self.get_N((x,y-self.DELTA,z), a, n)[2])
+        v_x = v_x - (self.get_N((x,y,z+self.DELTA), a, n)[1] - self.get_N((x,y,z-self.DELTA), a, n)[1])
         v_x = v_x / ( 2.0 * float(self.DELTA) )
 
-        v_y = (self.p_x[x,y,z+self.DELTA] - self.p_x[x,y,z-self.DELTA])
-        v_y = v_y - (self.p_z[x+self.DELTA,y,z] - self.p_z[x-self.DELTA,y,z])
+        v_y = (self.get_N((x,y+self.DELTA,z), a, n)[0] - self.get_N((x,y-self.DELTA,z), a, n)[0])
+        v_y = v_y - (self.get_N((x+self.DELTA,y,z), a, n)[2] - self.get_N((x-self.DELTA,y,z), a, n)[2])
         v_y = v_y / ( 2.0 * float(self.DELTA) )
 
         v_z = (self.p_y[x+self.DELTA,y,z] - self.p_y[x-self.DELTA,y,z])
         v_z = v_z - (self.p_x[x,y+self.DELTA,z] - self.p_x[x,y-self.DELTA,z])
         v_z = v_z / ( 2.0 * float(self.DELTA) )
 
+        v_z = (self.get_N((x+self.DELTA,y,z), a, n)[1] - self.get_N((x-self.DELTA,y,z), a, n)[1])
+        v_z = v_z - (self.get_N((x,y+self.DELTA,z), a, n)[0] - self.get_N((x,y-self.DELTA,z), a, n)[0])
+        v_z = v_z / ( 2.0 * float(self.DELTA) )
+
         return (v_x, v_y, v_z)
+
+    def get_N(self, coordinates, alpha, normal):
+        """
+        Helper function
+        N is defined as
+        N = alpha * P + (1 - alpha)(normal [dot] P) * normal
+        """
+        x,y,z = coordinates
+        # p are always boxes of same length
+        # We need to adjust the coordinates if we step outside the grid
+        # paper does not explain how to handle this
+        limit_x = self.p_x.shape[0]
+        limit_y = self.p_y.shape[0]
+        limit_z = self.p_z.shape[0]
+        if x < 0:
+            x = 0
+        elif x >= limit_x:
+            x = limit_x - 1
+        if y < 0:
+            y = 0
+        elif y >= limit_y:
+            y = limit_y - 1
+        if z < 0:
+            z = 0
+        elif z >= limit_z:
+            z = limit_z - 1
+        # Lets get it on!
+        p_x = self.p_x[x,y,z]
+        p_y = self.p_y[x,y,z]
+        p_z = self.p_z[x,y,z]
+
+        # Convert to numpy arrays
+        P = np.array([p_x, p_y, p_z])
+        normal = np.array(normal)
+        N = alpha * P + ((1.0 - alpha) * np.dot(normal, P) * normal)
+        return N
 
     def round_velocity_vector(self, vel_vec):
         x,y,z = vel_vec
@@ -82,7 +121,7 @@ class VelocityField:
         min_dist = min(dist_list.keys())
 
         # d_0 is 4 to test (Basically how fast to deteriorate speed when approaching boundary)
-        ramp_fn_arg = min_dist / 4.0
+        ramp_fn_arg = min_dist / self.D_0
         return dist_list[min_dist], self.ramp_function(ramp_fn_arg)
 
     def ramp_function(self, r):
