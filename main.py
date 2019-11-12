@@ -52,6 +52,9 @@ def main():
     bound_y = args.dimY
     bound_z = args.dimZ
 
+    v_f = VelocityField(None, None, None, bound_x, bound_y, bound_z)
+    v_f.plot_vec_field(step_size=1)
+
     if args.perlin_load_path is None:
         print("No perlin path, calculating new ones")
         p_x, p_y, p_z = precalculate_values((bound_x,bound_y,bound_z))
@@ -75,7 +78,9 @@ def main():
 
     v_f = VelocityField(p_x, p_y, p_z, bound_x, bound_y, bound_z)
 
-    v_f.plot_vec_field()
+    # v_f.plot_alpha_ramp()
+    # v_f.plot_vec_field(step_size=32)
+    v_f.plot_vec_field(step_size=1)
 
     no_bugs = 10
     bugs = []
@@ -91,7 +96,7 @@ def main():
     if not os.path.isdir(save_images_folder):
         os.mkdir(save_images_folder)
 
-    noise_gain = 200.0
+    # noise_gain = 200.0
     no_of_numbers = len(str(no_frames))
     frame_counter = 0
     for frame in range(no_frames):
@@ -103,10 +108,12 @@ def main():
             frame[x, y, z] = 1
             # Move buggy
             move_x, move_y, move_z = v_f.get_velocity(bug.position)
-            move_x = move_x * noise_gain
-            move_y = move_y * noise_gain
-            move_z = move_z * noise_gain
+            # print(f"move:({move_x}, {move_y}, {move_z})")
+            # move_x = move_x * noise_gain
+            # move_y = move_y * noise_gain
+            # move_z = move_z * noise_gain
             move_x, move_y, move_z = v_f.round_velocity_vector((move_x, move_y, move_z))
+            # print(f"move rounding:({move_x}, {move_y}, {move_z})")
             bug.move((move_x, move_y, move_z))
         print("Generating frame...", end='')
         x_vals, y_vals, z_vals = positions_from_grid(frame)
