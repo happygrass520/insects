@@ -75,6 +75,8 @@ def main():
 
     v_f = VelocityField(p_x, p_y, p_z, bound_x, bound_y, bound_z)
 
+    v_f.plot_vec_field()
+
     no_bugs = 10
     bugs = []
     for _ in range(no_bugs):

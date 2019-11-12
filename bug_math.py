@@ -3,6 +3,8 @@ import sys
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+import itertools
+import time
 
 from pprint import pprint
 
@@ -22,6 +24,69 @@ class VelocityField:
         self.bound_x = bound_x
         self.bound_y = bound_y
         self.bound_z = bound_z
+
+    def plot_vec_field(self, step_size = 8):
+        """
+        Create a 3D plot of the velocity field
+        EXPENSIVE as f*** to run
+        """
+        # Create new grid that can hold the vectors
+        # We can get the shape from any one of the p's
+        shape_len = self.p_x.shape[0] // step_size
+
+        # Grid        
+        X, Y, Z = np.meshgrid(
+                np.arange(0, shape_len, 1),
+                np.arange(0, shape_len, 1),
+                np.arange(0, shape_len, 1),
+                )
+        # Values
+        U, V, W = np.meshgrid(
+                np.arange(0, shape_len, 1),
+                np.arange(0, shape_len, 1),
+                np.arange(0, shape_len, 1),
+                )
+
+        # A bit strange, but lower-case letters are actual
+        # values (index or scalar from vec field) and big
+        # letter are arrays
+        print("Started calculating vector field...")
+        total_values_to_calc = (shape_len**3)
+        total_values_calculated = 0
+        average_time = 0.0
+        total_time = 0.0
+        for (x,y,z) in itertools.product(range(shape_len),repeat=3):
+            if total_values_calculated % 10 == 0:
+                percent_done = float(total_values_calculated) / float(total_values_to_calc) * 100.0
+                percent_to_int = int(percent_done)
+                prog_string = percent_to_int * '#'
+                prog_rev_string = (100 - percent_to_int) * ' '
+                time_left = average_time * (total_values_to_calc - total_values_calculated)
+                if time_left > 60.0:
+                    time_left = time_left / 60.0
+                    time_string = 'minutes'
+                else:
+                    time_string = 'seconds'
+                print(f"[{prog_string}{prog_rev_string}] ({percent_to_int}%) {time_left:.0f} {time_string} left...  \r", end='')
+                # print(f"Currently at:({x},{y},{z}) [{total_values_calculated}/{total_values_to_calc} = {percent_done}%]         \r", end='')
+            time_start = time.time()
+            u, v, w = self.get_velocity((x*step_size,y*step_size,z*step_size))
+            U[x,y,z] = u * 200.0
+            V[x,y,z] = v * 200.0
+            W[x,y,z] = w * 200.0
+            time_end = time.time()
+            total_time += time_end - time_start
+            if total_values_calculated != 0:
+                average_time = total_time / float(total_values_calculated)
+            total_values_calculated += 1
+        print("\nDone")
+        from mpl_toolkits.mplot3d import Axes3D
+        fig = plt.figure()
+        ax = fig.gca(projection='3d')
+
+        ax.quiver3D(X,Y,Z,U,V,W, length=0.5, normalize=True)
+        plt.show()
+        quit()
 
     def get_velocity(self, coordinates):
         # normal and alpha from boundary and ramp function
@@ -94,10 +159,14 @@ class VelocityField:
         # TODO not sure about these
         normal_x_bottom = (0, 0, 1)
         normal_x_top = (0, 0, -1)
-        normal_y_bottom = (1, 0, 0)
-        normal_y_top = (-1, 0, 0)
-        normal_z_bottom = (0, 1, 0)
-        normal_z_top = (0, -1, 0)
+        # normal_y_bottom = (1, 0, 0)
+        # normal_y_top = (-1, 0, 0)
+        # normal_z_bottom = (0, 1, 0)
+        # normal_z_top = (0, -1, 0)
+        normal_y_bottom = (0, 1, 0)
+        normal_y_top = (0, -1, 0)
+        normal_z_bottom = (1, 0, 0)
+        normal_z_top = (-1, 0, 0)
         x,y,z = coordinates
         distance_x_top = np.sqrt((self.bound_x - x) ** 2)
         distance_x_bottom = np.sqrt((0 - x) ** 2)
