@@ -52,8 +52,8 @@ def main():
     bound_y = args.dimY
     bound_z = args.dimZ
 
-    v_f = VelocityField(None, None, None, bound_x, bound_y, bound_z)
-    v_f.plot_vec_field(step_size=1)
+    # v_f = VelocityField(None, None, None, bound_x, bound_y, bound_z)
+    # v_f.plot_vec_field(step_size=1)
 
     if args.perlin_load_path is None:
         print("No perlin path, calculating new ones")
@@ -80,7 +80,7 @@ def main():
 
     # v_f.plot_alpha_ramp()
     # v_f.plot_vec_field(step_size=32)
-    v_f.plot_vec_field(step_size=1)
+    # v_f.plot_vec_field(step_size=1)
 
     no_bugs = 10
     bugs = []

@@ -14,8 +14,9 @@ class VelocityField:
     DELTA = 1
     # In the ramp function, this is used to 
     # amplify the approach to a boundary
-    D_0 = 3.0
-    P_GAIN = 400.0
+    # D_0 = 3.0
+    D_0 = 8.0
+    P_GAIN = 500.0
     # DEBUG = True
     DEBUG = False
 
@@ -50,28 +51,21 @@ class VelocityField:
         # We can get the shape from any one of the p's
         # shape_len = self.p_x.shape[0] // step_size
         shape_len = self.bound_x // step_size
+        total_values_to_calc = (shape_len**3)
 
         # Grid        
-        X, Y, Z = np.meshgrid(
-                np.arange(0, shape_len, 1),
-                np.arange(0, shape_len, 1),
-                np.arange(0, shape_len, 1),
-                )
+        X = np.zeros((total_values_to_calc))
+        Y = np.zeros((total_values_to_calc))
+        Z = np.zeros((total_values_to_calc))
         # Values
-        # U, V, W = np.meshgrid(
-                # np.arange(0, shape_len, 1, dtype=np.float),
-                # np.arange(0, shape_len, 1, dtype=np.float),
-                # np.arange(0, shape_len, 1, dtype=np.float),
-                # )
-        U = np.zeros((shape_len, shape_len, shape_len), dtype=np.float)
-        V = np.zeros((shape_len, shape_len, shape_len), dtype=np.float)
-        W = np.zeros((shape_len, shape_len, shape_len), dtype=np.float)
+        U = np.zeros((total_values_to_calc))
+        V = np.zeros((total_values_to_calc))
+        W = np.zeros((total_values_to_calc))
 
         # A bit strange, but lower-case letters are actual
         # values (index or scalar from vec field) and big
         # letter are arrays
         print("Started calculating vector field...")
-        total_values_to_calc = (shape_len**3)
         total_values_calculated = 0
         average_time = 0.0
         total_time = 0.0
@@ -90,29 +84,14 @@ class VelocityField:
                 print(f"[{prog_string}{prog_rev_string}] ({percent_to_int}%) {time_left:.0f} {time_string} left...  \r", end='')
                 # print(f"Currently at:({x},{y},{z}) [{total_values_calculated}/{total_values_to_calc} = {percent_done}%]         \r", end='')
             time_start = time.time()
-            # middle_point = np.array([4.0,4.0,4.0]) 
-            middle_point = np.array([4.0,4.0,4.0]) 
-            current_point = np.array([float(x),float(y),float(z)])
-            vec = middle_point - current_point
-            # vec = current_point - middle_point
-            print("----------------")
-            print(middle_point)
-            print(current_point)
-            print(vec)
-            if np.linalg.norm(vec) != 0.0:
-                vec /= np.linalg.norm(vec)
-            print(vec)
-            print(np.linalg.norm(vec))
-            # u, v, w = self.get_velocity((x*step_size,y*step_size,z*step_size))
-            # U[x,y,z] = u * 200.0
-            # V[x,y,z] = v * 200.0
-            # W[x,y,z] = w * 200.0
-            # U[x,y,z] = u
-            # V[x,y,z] = v
-            # W[x,y,z] = w
-            U[x,y,z] = vec[0]
-            V[x,y,z] = vec[1]
-            W[x,y,z] = vec[2]
+            u, v, w = self.get_velocity((x*step_size,y*step_size,z*step_size))
+            vec = (u,v,w)
+            X[total_values_calculated] = x
+            Y[total_values_calculated] = y
+            Z[total_values_calculated] = z
+            U[total_values_calculated] = vec[0]
+            V[total_values_calculated] = vec[1]
+            W[total_values_calculated] = vec[2]
             time_end = time.time()
             total_time += time_end - time_start
             if total_values_calculated != 0:
@@ -123,8 +102,7 @@ class VelocityField:
         fig = plt.figure()
         ax = fig.gca(projection='3d')
 
-        ax.quiver3D(X,Y,Z,U,V,W, length=0.3, normalize=True)
-        # ax.quiver3D(X,Y,Z,U,V,W)
+        ax.quiver3D(X,Y,Z,U,V,W, length=0.4, normalize=True)
         plt.show()
         quit()
 
@@ -225,55 +203,31 @@ class VelocityField:
 
         has to be calculated in each step for each coordinate
         """
-        # Prepare normals for each boundary surface
-        # TODO not sure about these
-        normal_x_bottom = (0, 0, 1)
-        normal_x_top = (0, 0, -1)
-        normal_y_bottom = (1, 0, 0)
-        normal_y_top = (-1, 0, 0)
-        normal_z_bottom = (0, 1, 0)
-        normal_z_top = (0, -1, 0)
         x,y,z = coordinates
-        distance_x_top = np.sqrt((self.bound_x - x) ** 2)
-        distance_x_bottom = np.sqrt((0 - x) ** 2)
-        distance_y_top = np.sqrt((self.bound_y - y) ** 2)
-        distance_y_bottom = np.sqrt((0 - y) ** 2)
-        distance_z_top = np.sqrt((self.bound_z - z) ** 2)
-        distance_z_bottom = np.sqrt((0 - z) ** 2)
-        # Create two lists, so that we can use min() to find the normal we want
-        dist_pairs = [
-                ('x_top', distance_x_top, normal_x_top),
-                ('x_bot', distance_x_bottom, normal_x_bottom),
-                ('y_top', distance_y_top, normal_y_top),
-                ('y_bot', distance_y_bottom, normal_y_bottom),
-                ('z_top', distance_z_top, normal_z_top),
-                ('z_bot', distance_z_bottom, normal_z_bottom),
-                ]
+        # Prepare normals for each boundary surface
+        # We are gonna create a normal that is always pointing into the swarm
+        # i.e center of the thing
+        c_x = self.bound_x // 2
+        c_y = self.bound_y // 2
+        c_z = self.bound_z // 2
+        centre = np.array([float(c_x), float(c_y), float(c_z)])
+        current_point = np.array([float(x),float(y),float(z)])
+        vec = centre - current_point
+        if np.linalg.norm(vec) != 0.0:
+            vec /= np.linalg.norm(vec)
+        # Find the minimum distance
         min_dist = min([
-                distance_x_top,
-                distance_x_bottom,
-                distance_y_top,
-                distance_y_bottom,
-                distance_z_top,
-                distance_z_bottom,
+            np.sqrt((self.bound_x - x) ** 2),
+            np.sqrt((0 - x) ** 2),
+            np.sqrt((self.bound_y - y) ** 2),
+            np.sqrt((0 - y) ** 2),
+            np.sqrt((self.bound_z - z) ** 2),
+            np.sqrt((0 - z) ** 2),
             ])
-        normals_to_add = []
-        for (name, dist, normal) in dist_pairs:
-            if dist == min_dist:
-                normals_to_add.append((name, normal))
-        final_n_x = 0
-        final_n_y = 0
-        final_n_z = 0
-        for (_,(x,y,z)) in normals_to_add:
-            final_n_x += x
-            final_n_y += y
-            final_n_z += z
-        final_normal = (final_n_x, final_n_y, final_n_z)
+        final_normal = (vec[0], vec[1], vec[2])
         #Trying something
-        # final_normal = (final_n_x * -1, final_n_y * -1, final_n_z * -1)
         if self.DEBUG: print('----------------')
         if self.DEBUG: print(f"coordinates:{coordinates}")
-        if self.DEBUG: print(f"normals_to_add:{normals_to_add}")
         if self.DEBUG: print(f"final_normal:{final_normal}")
         if self.DEBUG: print(f"min_dist:{min_dist}")
         # d_0 is 4 to test (Basically how fast to deteriorate speed when approaching boundary)
