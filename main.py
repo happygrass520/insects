@@ -108,12 +108,12 @@ def main():
             frame[x, y, z] = 1
             # Move buggy
             move_x, move_y, move_z = v_f.get_velocity(bug.position)
-            print(f"move:({move_x}, {move_y}, {move_z})")
+            # print(f"move:({move_x}, {move_y}, {move_z})")
             # move_x = move_x * noise_gain
             # move_y = move_y * noise_gain
             # move_z = move_z * noise_gain
             move_x, move_y, move_z = v_f.round_velocity_vector((move_x, move_y, move_z))
-            print(f"move rounding:({move_x}, {move_y}, {move_z})")
+            # print(f"move rounding:({move_x}, {move_y}, {move_z})")
             bug.move((move_x, move_y, move_z))
         print("Generating frame...", end='')
         x_vals, y_vals, z_vals = positions_from_grid(frame)
@@ -175,19 +175,20 @@ def save_image_from_grid(x_vals, y_vals, z_vals, elevation=-19, xy_angle=67, zoo
     # ax.plot(x_vals, y_vals, z_vals)
     # ax.scatter(x_vals, y_vals, z_vals)
     # ax.scatter(x_vals, y_vals, z_vals, c='white', depthshade=False)
-    ax.scatter(x_vals, y_vals, z_vals, c='white', depthshade=True)
+    # ax.scatter(x_vals, y_vals, z_vals, c='white', depthshade=True)
+    ax.scatter(x_vals, y_vals, z_vals, depthshade=True)
     ax.view_init(elev=elevation, azim=xy_angle)
     if zoom > 0:
         ax.margins(zoom, zoom, zoom)
     # else:
         # ax.margins(zoom)
-    ax.grid(False)
-    ax.axis('off')
-    ax.set_facecolor('xkcd:black')
-    fig.set_facecolor('xkcd:black')
+    # ax.grid(False)
+    # ax.axis('off')
+    # ax.set_facecolor('xkcd:black')
+    # fig.set_facecolor('xkcd:black')
     # plt.savefig(filename, dpi=dpi, edgecolor='xkcd:black', facecolor='xkcd:black')
-    plt.savefig(filename, edgecolor='xkcd:black', facecolor='xkcd:black')
-    # plt.savefig(filename)
+    # plt.savefig(filename, edgecolor='xkcd:black', facecolor='xkcd:black')
+    plt.savefig(filename)
     # plt.savefig(filename, dpi=10)
     # plt.show()
     plt.close(fig)
