@@ -16,7 +16,7 @@ class VelocityField:
     # amplify the approach to a boundary
     # D_0 = 3.0
     D_0 = 8.0
-    P_GAIN = 500.0
+    P_GAIN = 50.0
     # DEBUG = True
     DEBUG = False
 
@@ -86,6 +86,7 @@ class VelocityField:
             time_start = time.time()
             u, v, w = self.get_velocity((x*step_size,y*step_size,z*step_size))
             vec = (u,v,w)
+            print(f"co:({x}, {y}, {z})->({u:.2f}, {v:.2f}, {w:.2f})")
             X[total_values_calculated] = x
             Y[total_values_calculated] = y
             Z[total_values_calculated] = z
@@ -102,7 +103,8 @@ class VelocityField:
         fig = plt.figure()
         ax = fig.gca(projection='3d')
 
-        ax.quiver3D(X,Y,Z,U,V,W, length=0.4, normalize=True)
+        # ax.quiver3D(X,Y,Z,U,V,W, length=0.4, normalize=True)
+        ax.quiver3D(X,Y,Z,U,V,W)
         plt.show()
         quit()
 

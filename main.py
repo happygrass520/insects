@@ -79,7 +79,7 @@ def main():
     v_f = VelocityField(p_x, p_y, p_z, bound_x, bound_y, bound_z)
 
     # v_f.plot_alpha_ramp()
-    # v_f.plot_vec_field(step_size=32)
+    v_f.plot_vec_field(step_size=32)
     # v_f.plot_vec_field(step_size=1)
 
     no_bugs = 10
@@ -108,12 +108,12 @@ def main():
             frame[x, y, z] = 1
             # Move buggy
             move_x, move_y, move_z = v_f.get_velocity(bug.position)
-            # print(f"move:({move_x}, {move_y}, {move_z})")
+            print(f"move:({move_x}, {move_y}, {move_z})")
             # move_x = move_x * noise_gain
             # move_y = move_y * noise_gain
             # move_z = move_z * noise_gain
             move_x, move_y, move_z = v_f.round_velocity_vector((move_x, move_y, move_z))
-            # print(f"move rounding:({move_x}, {move_y}, {move_z})")
+            print(f"move rounding:({move_x}, {move_y}, {move_z})")
             bug.move((move_x, move_y, move_z))
         print("Generating frame...", end='')
         x_vals, y_vals, z_vals = positions_from_grid(frame)
