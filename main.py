@@ -13,11 +13,16 @@ from pprint import pprint
 from bug_math import VelocityField, precalculate_values
 
 class Insect:
-    def __init__(self, startpos, bound_x, bound_y, bound_z):
-        self.position = startpos
-        self.bound_x = bound_x
-        self.bound_y = bound_y
-        self.bound_z= bound_z
+    def __init__(self, startpos, bound_x, bound_y, bound_z, name):
+        self.name = name
+        x,y,z = startpos
+        x = float(x)
+        y = float(y)
+        z = float(z)
+        self.position = (x,y,z)
+        self.bound_x = float(bound_x)
+        self.bound_y = float(bound_y)
+        self.bound_z = float(bound_z)
 
     def move(self, move_vector):
         current_x, current_y, current_z = self.position
@@ -25,13 +30,21 @@ class Insect:
         new_x = current_x + move_x
         new_y = current_y + move_y
         new_z = current_z + move_z
-        if new_x < 0 or new_x >= self.bound_x:
+        if new_x < 0.0 or new_x > self.bound_x:
             new_x = current_x - move_x
-        if new_y < 0 or new_y >= self.bound_y:
+        if new_y < 0.0 or new_y > self.bound_y:
             new_y = current_y - move_y
-        if new_z < 0 or new_z >= self.bound_z:
+        if new_z < 0.0 or new_z > self.bound_z:
             new_z = current_z - move_z
         self.position = (new_x, new_y, new_z)
+
+    def get_rounded_position(self):
+        x,y,z = self.position
+        return (int(x), int(y), int(z))
+
+    def __str__(self):
+        x,y,z = self.position
+        return f"Bug {self.name}: {x:.2f}, {y:.2f}, {z:.2f}"
 
 def main():
     # argparse
@@ -79,20 +92,20 @@ def main():
     v_f = VelocityField(p_x, p_y, p_z, bound_x, bound_y, bound_z)
 
     # v_f.plot_alpha_ramp()
-    v_f.plot_vec_field(step_size=32)
+    # v_f.plot_vec_field(step_size=32)
     # v_f.plot_vec_field(step_size=1)
 
     no_bugs = 10
     bugs = []
-    for _ in range(no_bugs):
+    for i in range(no_bugs):
         x = random.randint(0,bound_x)
         y = random.randint(0,bound_y)
         z = random.randint(0,bound_z)
-        bugs.append(Insect((x,y,z), bound_x, bound_y, bound_z))
+        bugs.append(Insect((float(x),float(y),float(z)), float(bound_x), float(bound_y), float(bound_z), f"{i}"))
 
-    # save_images_folder_obj = tempfile.TemporaryDirectory()
-    # save_images_folder = save_images_folder_obj.name
-    save_images_folder = 'images'
+    save_images_folder_obj = tempfile.TemporaryDirectory()
+    save_images_folder = save_images_folder_obj.name
+    # save_images_folder = 'images'
     if not os.path.isdir(save_images_folder):
         os.mkdir(save_images_folder)
 
@@ -104,15 +117,16 @@ def main():
         print("Moving bugs...", end='')
         for bug in bugs:
             # Print buggy
-            x,y,z = bug.position
+            x,y,z = bug.get_rounded_position()
             frame[x, y, z] = 1
             # Move buggy
-            move_x, move_y, move_z = v_f.get_velocity(bug.position)
+            move_x, move_y, move_z = v_f.get_velocity(bug.get_rounded_position())
             # print(f"move:({move_x}, {move_y}, {move_z})")
+            # print(bug)
             # move_x = move_x * noise_gain
             # move_y = move_y * noise_gain
             # move_z = move_z * noise_gain
-            move_x, move_y, move_z = v_f.round_velocity_vector((move_x, move_y, move_z))
+            # move_x, move_y, move_z = v_f.round_velocity_vector((move_x, move_y, move_z))
             # print(f"move rounding:({move_x}, {move_y}, {move_z})")
             bug.move((move_x, move_y, move_z))
         print("Generating frame...", end='')
@@ -126,7 +140,7 @@ def main():
     save_video_from_grid(save_images_folder, 25, args.output)
 
     print(f"Cleaning up temporary folder {save_images_folder}...")
-    # save_images_folder_obj.cleanup()
+    save_images_folder_obj.cleanup()
     print("Cleanup done.")
 
 def save_video_from_grid(frames_folder, framerate, video_filename):
