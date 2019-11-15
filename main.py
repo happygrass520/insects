@@ -63,6 +63,7 @@ def main():
     parser.add_argument('--elevation', type=int, default=6)
     parser.add_argument('--zoom', type=float, default=0.0)
     parser.add_argument('--show_debug_grid', action='store_true')
+    parser.add_argument('--yes_to_all', action='store_true')
     args = parser.parse_args()
 
     no_frames = args.frames
@@ -73,7 +74,7 @@ def main():
     # v_f = VelocityField(None, None, None, bound_x, bound_y, bound_z)
     # v_f.plot_vec_field(step_size=1)
     # Load or generate perlin noise
-    p_x, p_y, p_z = perlin_values((bound_x, bound_y, bound_z), args.perlin_load_path, args.perlin_save_path)
+    p_x, p_y, p_z = perlin_values((bound_x, bound_y, bound_z), args.perlin_load_path, args.perlin_save_path, args.yes_to_all)
 
     v_f = VelocityField(p_x, p_y, p_z, bound_x, bound_y, bound_z)
 
@@ -184,7 +185,7 @@ def load_perlin_noise(folder, filename, dimension):
         # We couldnt find it
         return None
 
-def perlin_values(bounds, load_path, save_path):
+def perlin_values(bounds, load_path, save_path, yes_to_all):
     # Define defaults
     # Resolution for perlin noise.. maybe
     res = (4,4,4)
@@ -201,10 +202,7 @@ def perlin_values(bounds, load_path, save_path):
         print("Trying to load p_x...")
         l_p_x = load_perlin_noise(load_path, 'p_x', b_x)
         if l_p_x is None:
-            y_n = input(f"Could not load p_x for {b_x}, do you want to create it?")
-            if y_n.lower() != 'y':
-                print("Aborting")
-            print("Generating perlin noise...")
+            print(f"Could not load p_x for {b_x}, creating...")
             l_p_x = generate_perlin_noise_3d(bounds,res)
             print("Done")
         else:
@@ -215,10 +213,7 @@ def perlin_values(bounds, load_path, save_path):
         print("Trying to load p_y...")
         l_p_y = load_perlin_noise(load_path, 'p_y', b_y)
         if l_p_y is None:
-            y_n = input(f"Could not load p_y for {b_y}, do you want to create it?")
-            if y_n.lower() != 'y':
-                print("Aborting")
-            print("Generating perlin noise...")
+            print(f"Could not load p_y for {b_y}, creating...")
             l_p_y = generate_perlin_noise_3d(bounds,res)
             print("Done")
         else:
@@ -229,10 +224,7 @@ def perlin_values(bounds, load_path, save_path):
         print("Trying to load p_z...")
         l_p_z = load_perlin_noise(load_path, 'p_z', b_z)
         if l_p_z is None:
-            y_n = input(f"Could not load p_z for {b_z}, do you want to create it?")
-            if y_n.lower() != 'y':
-                print("Aborting")
-            print("Generating perlin noise...")
+            print(f"Could not load p_z for {b_z},creating...")
             l_p_z = generate_perlin_noise_3d(bounds,res)
             print("Done")
         else:
