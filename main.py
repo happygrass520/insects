@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from pprint import pprint
 
-from bug_math import VelocityField, precalculate_values
+from bug_math import VelocityField, precalculate_values, generate_perlin_noise_3d
 
 class Insect:
     def __init__(self, startpos, bound_x, bound_y, bound_z, name):
@@ -58,6 +58,11 @@ def main():
     parser.add_argument('--dimZ', type=int, default=128)
     parser.add_argument('--perlin_load_path', type=os.path.abspath)
     parser.add_argument('--perlin_save_path', type=os.path.abspath)
+    parser.add_argument('--one_frame', action='store_true', help='Shows one frame and then quits')
+    parser.add_argument('--angle', type=int, default=40)
+    parser.add_argument('--elevation', type=int, default=6)
+    parser.add_argument('--zoom', type=float, default=0.0)
+    parser.add_argument('--show_debug_grid', action='store_true')
     args = parser.parse_args()
 
     no_frames = args.frames
@@ -67,27 +72,8 @@ def main():
 
     # v_f = VelocityField(None, None, None, bound_x, bound_y, bound_z)
     # v_f.plot_vec_field(step_size=1)
-
-    if args.perlin_load_path is None:
-        print("No perlin path, calculating new ones")
-        p_x, p_y, p_z = precalculate_values((bound_x,bound_y,bound_z))
-    else:
-        print(f"Loading perlin from {args.perlin_load_path}...")
-        p_x = load_perlin_noise(args.perlin_load_path, 'p_x', bound_x)
-        print("Loaded p_x")
-        p_y = load_perlin_noise(args.perlin_load_path, 'p_y', bound_y)
-        print("Loaded p_y")
-        p_z = load_perlin_noise(args.perlin_load_path, 'p_z', bound_z)
-        print("Loaded p_z")
-
-    if args.perlin_save_path is not None:
-        print(f"Saving perlin to {args.perlin_save_path}...")
-        save_perlin_noise(args.perlin_save_path, 'p_x', p_x, bound_x)
-        print("Saved p_x...")
-        save_perlin_noise(args.perlin_save_path, 'p_y', p_y, bound_y)
-        print("Saved p_y...")
-        save_perlin_noise(args.perlin_save_path, 'p_z', p_z, bound_z)
-        print("Saved p_z! Done!")
+    # Load or generate perlin noise
+    p_x, p_y, p_z = perlin_values((bound_x, bound_y, bound_z), args.perlin_load_path, args.perlin_save_path)
 
     v_f = VelocityField(p_x, p_y, p_z, bound_x, bound_y, bound_z)
 
@@ -132,7 +118,28 @@ def main():
         print("Generating frame...", end='')
         x_vals, y_vals, z_vals = positions_from_grid(frame)
         filename = f"{save_images_folder}/bugs-frame-{frame_counter:0>{no_of_numbers}}.png"
-        save_image_from_grid(x_vals, y_vals, z_vals, filename=filename)
+        if args.one_frame:
+            show_image_from_grid(
+                    x_vals,
+                    y_vals,
+                    z_vals,
+                    filename=filename,
+                    elevation=args.elevation,
+                    xy_angle=args.angle,
+                    zoom=args.zoom,
+                    show_debug_grid=args.show_debug_grid,
+                    )
+            quit()
+        save_image_from_grid(
+                x_vals,
+                y_vals,
+                z_vals,
+                filename=filename,
+                elevation=args.elevation,
+                xy_angle=args.angle,
+                zoom=args.zoom,
+                show_debug_grid=args.show_debug_grid,
+                )
         print(f"Saved frame {frame_counter} as {filename}!\r", end='')
         # frame is done!
         frame_counter += 1
@@ -169,42 +176,138 @@ def save_perlin_noise(folder, filename, p, dimension):
 
 def load_perlin_noise(folder, filename, dimension):
     loaded_p = None
-    with open(f'{folder}/{filename}_{dimension}.perlin', 'rb') as f:
-        loaded_p = pickle.load(f)
-    return loaded_p
+    try:
+        with open(f'{folder}/{filename}_{dimension}.perlin', 'rb') as f:
+            loaded_p = pickle.load(f)
+        return loaded_p
+    except OSError:
+        # We couldnt find it
+        return None
 
-# def save_image_from_grid(x_vals, y_vals, z_vals, elevation=30, xy_angle=-60, zoom=0, filename=None):
-def save_image_from_grid(x_vals, y_vals, z_vals, elevation=-19, xy_angle=67, zoom=0, filename=None):
+def perlin_values(bounds, load_path, save_path):
+    # Define defaults
+    # Resolution for perlin noise.. maybe
+    res = (4,4,4)
+    b_x, b_y, b_z = bounds
+    p_x = None
+    p_y = None
+    p_z = None
+    # Check if files has been loaded
+    loaded_p_x = False
+    loaded_p_y = False
+    loaded_p_z = False
+    # Lets see if we can load any!
+    if load_path is not None:
+        print("Trying to load p_x...")
+        l_p_x = load_perlin_noise(load_path, 'p_x', b_x)
+        if l_p_x is None:
+            y_n = input(f"Could not load p_x for {b_x}, do you want to create it?")
+            if y_n.lower() != 'y':
+                print("Aborting")
+            print("Generating perlin noise...")
+            l_p_x = generate_perlin_noise_3d(bounds,res)
+            print("Done")
+        else:
+            print("Successful loading of p_x!")
+            loaded_p_x = True
+        p_x = l_p_x
+
+        print("Trying to load p_y...")
+        l_p_y = load_perlin_noise(load_path, 'p_y', b_y)
+        if l_p_y is None:
+            y_n = input(f"Could not load p_y for {b_y}, do you want to create it?")
+            if y_n.lower() != 'y':
+                print("Aborting")
+            print("Generating perlin noise...")
+            l_p_y = generate_perlin_noise_3d(bounds,res)
+            print("Done")
+        else:
+            print("Successful loading of p_y!")
+            loaded_p_y = True
+        p_y = l_p_y
+
+        print("Trying to load p_z...")
+        l_p_z = load_perlin_noise(load_path, 'p_z', b_z)
+        if l_p_z is None:
+            y_n = input(f"Could not load p_z for {b_z}, do you want to create it?")
+            if y_n.lower() != 'y':
+                print("Aborting")
+            print("Generating perlin noise...")
+            l_p_z = generate_perlin_noise_3d(bounds,res)
+            print("Done")
+        else:
+            print("Successful loading of p_z!")
+            loaded_p_z = True
+        p_z = l_p_z
+    # now we know that p_[x,y,z] are filled with values
+    # Lets see if we wanna save it
+    if save_path is not None:
+        if loaded_p_x:
+            print("p_x was loaded, skipping save...")
+        else:
+            print("Saving p_x...")
+            save_perlin_noise(save_path, 'p_x', p_x, b_x)
+            print("Saved!")
+        if loaded_p_y:
+            print("p_y was loaded, skipping save...")
+        else:
+            print("Saving p_y...")
+            save_perlin_noise(save_path, 'p_y', p_y, b_y)
+            print("Saved!")
+        if loaded_p_z:
+            print("p_z was loaded, skipping save...")
+        else:
+            print("Saving p_z...")
+            save_perlin_noise(save_path, 'p_z', p_z, b_z)
+            print("Saved!")
+
+    return p_x, p_y, p_z
+
+
+
+
+def generate_image(x_vals, y_vals, z_vals, elevation, xy_angle, zoom, show_debug_grid):
     dpi = 10
     side_size = 12.8
     # side_size = 25.6
-    # side_size = 25.6
-    # fig = plt.figure(figsize=(side_size, side_size), dpi=dpi)
-    fig = plt.figure()
+    fig = plt.figure(figsize=(side_size, side_size), dpi=dpi)
+    # fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
     ax.set_xlim(0,256)
     ax.set_ylim(0,256)
     ax.set_zlim(0,256)
-    # ax.plot(grid[:,0], grid[:,1], grid[:,2])
-    # ax.plot(x_vals, y_vals, z_vals)
-    # ax.scatter(x_vals, y_vals, z_vals)
-    # ax.scatter(x_vals, y_vals, z_vals, c='white', depthshade=False)
-    # ax.scatter(x_vals, y_vals, z_vals, c='white', depthshade=True)
-    ax.scatter(x_vals, y_vals, z_vals, depthshade=True)
+    if show_debug_grid:
+        ax.scatter(x_vals, y_vals, z_vals, depthshade=True)
+    else:
+        ax.scatter(x_vals, y_vals, z_vals, c='white', depthshade=True)
     ax.view_init(elev=elevation, azim=xy_angle)
     if zoom > 0:
         ax.margins(zoom, zoom, zoom)
-    # else:
-        # ax.margins(zoom)
-    # ax.grid(False)
-    # ax.axis('off')
-    # ax.set_facecolor('xkcd:black')
-    # fig.set_facecolor('xkcd:black')
+    if not show_debug_grid:
+        ax.grid(False)
+        ax.axis('off')
+        ax.set_facecolor('xkcd:black')
+        fig.set_facecolor('xkcd:black')
+    return ax, fig
+
+# def save_image_from_grid(x_vals, y_vals, z_vals, elevation=30, xy_angle=-60, zoom=0, filename=None):
+def save_image_from_grid(x_vals, y_vals, z_vals, elevation=-19, xy_angle=67, zoom=0, filename=None, show_debug_grid=False):
+    ax, fig = generate_image(x_vals, y_vals, z_vals, elevation, xy_angle, zoom, show_debug_grid)
     # plt.savefig(filename, dpi=dpi, edgecolor='xkcd:black', facecolor='xkcd:black')
     # plt.savefig(filename, edgecolor='xkcd:black', facecolor='xkcd:black')
-    plt.savefig(filename)
-    # plt.savefig(filename, dpi=10)
+    # plt.savefig(filename)
+    plt.savefig(filename, dpi=10)
     # plt.show()
+    plt.close(fig)
+
+def show_image_from_grid(x_vals, y_vals, z_vals, elevation=-19, xy_angle=67, zoom=0, filename=None, show_debug_grid=False):
+    ax, fig = generate_image(x_vals, y_vals, z_vals, elevation, xy_angle, zoom, show_debug_grid)
+    # plt.savefig(filename, dpi=dpi, edgecolor='xkcd:black', facecolor='xkcd:black')
+    # plt.savefig(filename, edgecolor='xkcd:black', facecolor='xkcd:black')
+    # plt.savefig(filename)
+    # plt.savefig(filename, dpi=10)
+    # plt.show(dpi=10)
+    plt.show()
     plt.close(fig)
 
 def positions_from_grid(grid):

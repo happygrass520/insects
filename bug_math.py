@@ -264,7 +264,8 @@ def precalculate_values(shape):
     print(f"P3: mean:{np.mean(p3)} min:{np.min(p3)} max: {np.max(p3)}")
     return p1, p2, p3
 
-def generate_perlin_noise_3d(shape, res):
+
+def generate_perlin_noise_3d(shape, res, print_progress=False):
     """
     Generate perlin noise in 3D
     Taken from Github pvigier/perlin-numpy - perlin3d.py
@@ -272,39 +273,82 @@ def generate_perlin_noise_3d(shape, res):
     def f(t):
         return 6*t**5 - 15*t**4 + 10*t**3
 
+    class PrintProgress:
+        def __init__(self, to_print, total_steps):
+            self.to_print = to_print
+            self.total_steps = total_steps
+            self.taken_steps = 0
+        def print_progress(self):
+            if self.to_print:
+                print(f"\tStep {self.taken_steps} of {self.total_steps} done...")
+                self.taken_steps += 1
+
+    printer = PrintProgress(print_progress, 29)
+
+    printer.print_progress()
     delta = (res[0] / shape[0], res[1] / shape[1], res[2] / shape[2])
+    printer.print_progress()
     d = (shape[0] // res[0], shape[1] // res[1], shape[2] // res[2])
+    printer.print_progress()
     grid = np.mgrid[0:res[0]:delta[0],0:res[1]:delta[1],0:res[2]:delta[2]]
+    printer.print_progress()
     grid = grid.transpose(1, 2, 3, 0) % 1
+    printer.print_progress()
     # Gradients
     theta = 2*np.pi*np.random.rand(res[0]+1, res[1]+1, res[2]+1)
+    printer.print_progress()
     phi = 2*np.pi*np.random.rand(res[0]+1, res[1]+1, res[2]+1)
+    printer.print_progress()
     gradients = np.stack((np.sin(phi)*np.cos(theta), np.sin(phi)*np.sin(theta), np.cos(phi)), axis=3)
+    printer.print_progress()
     g000 = gradients[0:-1,0:-1,0:-1].repeat(d[0], 0).repeat(d[1], 1).repeat(d[2], 2)
+    printer.print_progress()
     g100 = gradients[1:  ,0:-1,0:-1].repeat(d[0], 0).repeat(d[1], 1).repeat(d[2], 2)
+    printer.print_progress()
     g010 = gradients[0:-1,1:  ,0:-1].repeat(d[0], 0).repeat(d[1], 1).repeat(d[2], 2)
+    printer.print_progress()
     g110 = gradients[1:  ,1:  ,0:-1].repeat(d[0], 0).repeat(d[1], 1).repeat(d[2], 2)
+    printer.print_progress()
     g001 = gradients[0:-1,0:-1,1:  ].repeat(d[0], 0).repeat(d[1], 1).repeat(d[2], 2)
+    printer.print_progress()
     g101 = gradients[1:  ,0:-1,1:  ].repeat(d[0], 0).repeat(d[1], 1).repeat(d[2], 2)
+    printer.print_progress()
     g011 = gradients[0:-1,1:  ,1:  ].repeat(d[0], 0).repeat(d[1], 1).repeat(d[2], 2)
+    printer.print_progress()
     g111 = gradients[1:  ,1:  ,1:  ].repeat(d[0], 0).repeat(d[1], 1).repeat(d[2], 2)
+    printer.print_progress()
     # Ramps
     n000 = np.sum(np.stack((grid[:,:,:,0]  , grid[:,:,:,1]  , grid[:,:,:,2]  ), axis=3) * g000, 3)
+    printer.print_progress()
     n100 = np.sum(np.stack((grid[:,:,:,0]-1, grid[:,:,:,1]  , grid[:,:,:,2]  ), axis=3) * g100, 3)
+    printer.print_progress()
     n010 = np.sum(np.stack((grid[:,:,:,0]  , grid[:,:,:,1]-1, grid[:,:,:,2]  ), axis=3) * g010, 3)
+    printer.print_progress()
     n110 = np.sum(np.stack((grid[:,:,:,0]-1, grid[:,:,:,1]-1, grid[:,:,:,2]  ), axis=3) * g110, 3)
+    printer.print_progress()
     n001 = np.sum(np.stack((grid[:,:,:,0]  , grid[:,:,:,1]  , grid[:,:,:,2]-1), axis=3) * g001, 3)
+    printer.print_progress()
     n101 = np.sum(np.stack((grid[:,:,:,0]-1, grid[:,:,:,1]  , grid[:,:,:,2]-1), axis=3) * g101, 3)
+    printer.print_progress()
     n011 = np.sum(np.stack((grid[:,:,:,0]  , grid[:,:,:,1]-1, grid[:,:,:,2]-1), axis=3) * g011, 3)
+    printer.print_progress()
     n111 = np.sum(np.stack((grid[:,:,:,0]-1, grid[:,:,:,1]-1, grid[:,:,:,2]-1), axis=3) * g111, 3)
+    printer.print_progress()
     # Interpolation
     t = f(grid)
+    printer.print_progress()
     n00 = n000*(1-t[:,:,:,0]) + t[:,:,:,0]*n100
+    printer.print_progress()
     n10 = n010*(1-t[:,:,:,0]) + t[:,:,:,0]*n110
+    printer.print_progress()
     n01 = n001*(1-t[:,:,:,0]) + t[:,:,:,0]*n101
+    printer.print_progress()
     n11 = n011*(1-t[:,:,:,0]) + t[:,:,:,0]*n111
+    printer.print_progress()
     n0 = (1-t[:,:,:,1])*n00 + t[:,:,:,1]*n10
+    printer.print_progress()
     n1 = (1-t[:,:,:,1])*n01 + t[:,:,:,1]*n11
+    printer.print_progress()
     return ((1-t[:,:,:,2])*n0 + t[:,:,:,2]*n1)
 
 def main():
