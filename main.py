@@ -30,11 +30,11 @@ class Insect:
         new_x = current_x + move_x
         new_y = current_y + move_y
         new_z = current_z + move_z
-        if new_x < 0.0 or new_x > self.bound_x:
+        if new_x < 0.0 or new_x > self.bound_x - 1.0:
             new_x = current_x - move_x
-        if new_y < 0.0 or new_y > self.bound_y:
+        if new_y < 0.0 or new_y > self.bound_y - 1.0:
             new_y = current_y - move_y
-        if new_z < 0.0 or new_z > self.bound_z:
+        if new_z < 0.0 or new_z > self.bound_z - 1.0:
             new_z = current_z - move_z
         self.position = (new_x, new_y, new_z)
 
