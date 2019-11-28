@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from pprint import pprint
 
-from bug_math import VelocityField, precalculate_values, generate_perlin_noise_3d
+from bug_math import VelocityField, precalculate_values, generate_perlin_noise_3d, generate_random_noise_3d
 
 class Insect:
     def __init__(self, startpos, bound_x, bound_y, bound_z, name):
@@ -65,7 +65,10 @@ def main():
     parser.add_argument('--zoom', type=float, default=0.0)
     parser.add_argument('--show_debug_grid', action='store_true')
     parser.add_argument('--plot_vec_field', action='store_true')
+    parser.add_argument('--debug_repl', action='store_true')
+    parser.add_argument('--plot_alpha', action='store_true')
     parser.add_argument('--yes_to_all', action='store_true')
+    parser.add_argument('--append_params_to_name', action='store_true')
     args = parser.parse_args()
 
     no_frames = args.frames
@@ -79,10 +82,13 @@ def main():
 
     v_f = VelocityField(p_x, p_y, p_z, bound_x, bound_y, bound_z)
 
-    if args.plot_vec_field:
-        # v_f.plot_vec_field(step_size=16)
+    if args.debug_repl:
+        v_f.debug_repl()
+    if args.plot_alpha:
         v_f.plot_alpha_ramp()
-        v_f.plot_vec_field(step_size=2)
+    if args.plot_vec_field:
+        v_f.plot_vec_field(step_size=32)
+        # v_f.plot_vec_field(step_size=2)
 
     # v_f.plot_vec_field(step_size=32)
     # v_f.plot_vec_field(step_size=1)
@@ -90,9 +96,9 @@ def main():
     no_bugs = 10
     bugs = []
     for i in range(no_bugs):
-        x = random.randint(0,bound_x)
-        y = random.randint(0,bound_y)
-        z = random.randint(0,bound_z)
+        x = random.randint(0,bound_x - 1)
+        y = random.randint(0,bound_y - 1)
+        z = random.randint(0,bound_z - 1)
         bugs.append(Insect((float(x),float(y),float(z)), float(bound_x), float(bound_y), float(bound_z), f"{i}"))
 
     save_images_folder_obj = tempfile.TemporaryDirectory()
@@ -150,6 +156,9 @@ def main():
         # frame is done!
         frame_counter += 1
 
+    if args.append_params_to_name:
+        extra_params = f"-dim-{args.dimX}x{args.dimY}x{args.dimZ}-d_0-{v_f.D_0}-P_GAIN-{v_f.P_GAIN}"
+        args.output = f"{args.output}{extra_params}.avi"
     save_video_from_grid(save_images_folder, 25, args.output)
 
     print(f"Cleaning up temporary folder {save_images_folder}...")
@@ -172,7 +181,7 @@ def save_video_from_grid(frames_folder, framerate, video_filename):
             ]
     print(f"Running command '{' '.join(commands)}'")
     subprocess.run(' '.join(commands), shell=True)
-    print("Dont generating video!")
+    print("Done generating video!")
 
 def save_perlin_noise(folder, filename, p, dimension):
     if not os.path.isdir(folder):
@@ -208,7 +217,8 @@ def perlin_values(bounds, load_path, save_path, yes_to_all):
         l_p_x = load_perlin_noise(load_path, 'p_x', b_x)
         if l_p_x is None:
             print(f"Could not load p_x for {b_x}, creating...")
-            l_p_x = generate_perlin_noise_3d(bounds,res)
+            # l_p_x = generate_perlin_noise_3d(bounds,res)
+            l_p_x = generate_random_noise_3d(bounds,res)
             print("Done")
         else:
             print("Successful loading of p_x!")
@@ -219,7 +229,8 @@ def perlin_values(bounds, load_path, save_path, yes_to_all):
         l_p_y = load_perlin_noise(load_path, 'p_y', b_y)
         if l_p_y is None:
             print(f"Could not load p_y for {b_y}, creating...")
-            l_p_y = generate_perlin_noise_3d(bounds,res)
+            # l_p_y = generate_perlin_noise_3d(bounds,res)
+            l_p_y = generate_random_noise_3d(bounds,res)
             print("Done")
         else:
             print("Successful loading of p_y!")
@@ -230,7 +241,8 @@ def perlin_values(bounds, load_path, save_path, yes_to_all):
         l_p_z = load_perlin_noise(load_path, 'p_z', b_z)
         if l_p_z is None:
             print(f"Could not load p_z for {b_z},creating...")
-            l_p_z = generate_perlin_noise_3d(bounds,res)
+            # l_p_z = generate_perlin_noise_3d(bounds,res)
+            l_p_z = generate_random_noise_3d(bounds,res)
             print("Done")
         else:
             print("Successful loading of p_z!")
@@ -259,9 +271,6 @@ def perlin_values(bounds, load_path, save_path, yes_to_all):
             print("Saved!")
 
     return p_x, p_y, p_z
-
-
-
 
 def generate_image(x_vals, y_vals, z_vals, elevation, xy_angle, zoom, show_debug_grid):
     dpi = 10

@@ -16,14 +16,17 @@ class VelocityField:
     # amplify the approach to a boundary
     # D_0 = 3.0
     # D_0 = 32.0
-    D_0 = 2.0
+    D_0 = 64.0
     # P_GAIN = 400.0
     # P_GAIN = 100.0
-    # P_GAIN = 4.0
+    P_GAIN = 4.0
     # P_GAIN = 8.0
-    P_GAIN = 16.0
-    DEBUG = True
-    # DEBUG = False
+    # P_GAIN = 16.0
+    # P_GAIN = 50.0
+    # P_GAIN = 100.0
+    # P_GAIN = 75.0
+    # DEBUG = True
+    DEBUG = False
 
     def __init__(self, p1, p2, p3, bound_x, bound_y, bound_z):
         self.p_x = p1
@@ -34,18 +37,36 @@ class VelocityField:
         self.bound_y = bound_y
         self.bound_z = bound_z
 
+    def debug_repl(self):
+        while True:
+            print("----------------------------")
+            print(f"Params:")
+            print(f"D_0: = {self.D_0}")
+            print(f"P_GAIN: = {self.P_GAIN}")
+            coords = input("Coordinates as 'x y z':")
+            if coords.lower() == 'q' or coords.lower() == 'quit':
+                break
+            coords_split = coords.split(" ")
+            x = int(coords_split[0])
+            y = int(coords_split[1])
+            z = int(coords_split[2])
+            vec = self.get_velocity((x,y,z))
+            print(f"Velocity vector: {vec}")
+        print("Exited repl , quitting...")
+        quit()
+
+
     def plot_alpha_ramp(self):
         # Max size that we send in is (bound / 2)
         # if a bug is in the exact middle
         x = np.arange(0, self.p_x.shape[0] / 2, 1)
-        x = np.arange(0, 10, 1)
-        different_ds = [1.0, 2.0, 4.0, 8.0, 16.0]
+        x = np.arange(0, 32, 1)
+        different_ds = [1.0, 2.0, 4.0, 8.0, 16.0, 32.0]
         ys = []
         for ds in different_ds:
             y = [ self.ramp_function(x_n / ds) for x_n in x ]
             plt.plot(x,y)
         plt.show()
-        quit()
 
     def plot_vec_field(self, step_size = 1):
         """
@@ -207,6 +228,7 @@ class VelocityField:
 
         # Convert to numpy arrays
         P = np.array([p_x * self.P_GAIN , p_y * self.P_GAIN, p_z * self.P_GAIN])
+        P_magn = np.linalg.norm(P)
         P_abs = np.array([np.abs(p_x * self.P_GAIN) , np.abs(p_y * self.P_GAIN), np.abs(p_z * self.P_GAIN)])
         normal = np.array(normal)
         normal[normal < 0] = -1.
@@ -222,6 +244,9 @@ class VelocityField:
         # New variant
         # N = alpha * P + ((1.0 - alpha) * np.dot(normal, P_abs) * normal)
         N = alpha * P + ((1.0 - alpha) * (P_abs * normal))
+        N_magn = np.linalg.norm(N)
+
+        if self.DEBUG: print(f"|P| = {P_magn} |N| = {N_magn}")
         # if self.DEBUG: print(f"N: {N}")
         return N
 
@@ -238,6 +263,24 @@ class VelocityField:
         has to be calculated in each step for each coordinate
         """
         x,y,z = coordinates
+        limit_x = self.p_x.shape[0]
+        limit_y = self.p_y.shape[0]
+        limit_z = self.p_z.shape[0]
+        if x < 0:
+            x = 0
+        elif x >= limit_x:
+            # x = limit_x - 1
+            x = limit_x
+        if y < 0:
+            y = 0
+        elif y >= limit_y:
+            # y = limit_y - 1
+            y = limit_y
+        if z < 0:
+            z = 0
+        elif z >= limit_z:
+            # z = limit_z - 1
+            z = limit_z 
         # Prepare normals for each boundary surface
         # We are gonna create a normal that is always pointing into the swarm
         # i.e center of the thing
@@ -295,6 +338,12 @@ def precalculate_values(shape):
     print(f"P2: mean:{np.mean(p2)} min:{np.min(p2)} max: {np.max(p2)}")
     print(f"P3: mean:{np.mean(p3)} min:{np.min(p3)} max: {np.max(p3)}")
     return p1, p2, p3
+
+
+def generate_random_noise_3d(shape, res):
+    # Dont do anything with res...
+    return np.random.uniform(low=-1., high=1.0, size=shape)
+
 
 
 def generate_perlin_noise_3d(shape, res, print_progress=False):
