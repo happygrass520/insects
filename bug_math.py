@@ -15,10 +15,15 @@ class VelocityField:
     # In the ramp function, this is used to 
     # amplify the approach to a boundary
     # D_0 = 3.0
-    D_0 = 64.0
-    P_GAIN = 400.0
-    # DEBUG = True
-    DEBUG = False
+    # D_0 = 32.0
+    D_0 = 2.0
+    # P_GAIN = 400.0
+    # P_GAIN = 100.0
+    # P_GAIN = 4.0
+    # P_GAIN = 8.0
+    P_GAIN = 16.0
+    DEBUG = True
+    # DEBUG = False
 
     def __init__(self, p1, p2, p3, bound_x, bound_y, bound_z):
         self.p_x = p1
@@ -34,7 +39,7 @@ class VelocityField:
         # if a bug is in the exact middle
         x = np.arange(0, self.p_x.shape[0] / 2, 1)
         x = np.arange(0, 10, 1)
-        different_ds = [1.0, 2.0, 4.0, 8.0]
+        different_ds = [1.0, 2.0, 4.0, 8.0, 16.0]
         ys = []
         for ds in different_ds:
             y = [ self.ramp_function(x_n / ds) for x_n in x ]
@@ -69,6 +74,8 @@ class VelocityField:
         total_values_calculated = 0
         average_time = 0.0
         total_time = 0.0
+        # cordsii = [ (x,x,x) for x in range(128) ]
+        # for (x,y,z) in cordsii:
         for (x,y,z) in itertools.product(range(shape_len),repeat=3):
             if total_values_calculated % 10 == 0:
                 percent_done = float(total_values_calculated) / float(total_values_to_calc) * 100.0
@@ -103,13 +110,19 @@ class VelocityField:
         fig = plt.figure()
         ax = fig.gca(projection='3d')
 
-        ax.quiver3D(X,Y,Z,U,V,W, length=0.4, normalize=True)
-        # ax.quiver3D(X,Y,Z,U,V,W)
+        # ax.quiver3D(X,Y,Z,U,V,W, length=0.4, normalize=True)
+        # ax.quiver3D(X,Y,Z,U,V,W, normalize=True)
+        ax.quiver3D(X,Y,Z,U,V,W)
         plt.show()
         quit()
 
     def get_velocity(self, coordinates):
         x,y,z = coordinates
+
+        # if x == 0 or y == 0 or z ==  0 or x == 128 or y == 128 or z == 128:
+            # self.DEBUG = True
+        # else:
+            # self.DEBUG = False
 
         # Old style, where P = N
         """
@@ -120,7 +133,9 @@ class VelocityField:
             return (0,0,0)
         if z < 0 or z >= bounds - 1:
             return (0,0,0)
+        """
 
+        """
         v_x = (self.p_z[x,y+self.DELTA,z] - self.p_z[x,y-self.DELTA,z])
         v_x = v_x - (self.p_y[x,y,z+self.DELTA] - self.p_y[x,y,z-self.DELTA])
         v_x = v_x / ( 2.0 * float(self.DELTA) )
@@ -132,8 +147,15 @@ class VelocityField:
         v_z = (self.p_y[x+self.DELTA,y,z] - self.p_y[x-self.DELTA,y,z])
         v_z = v_z - (self.p_x[x,y+self.DELTA,z] - self.p_x[x,y-self.DELTA,z])
         v_z = v_z / ( 2.0 * float(self.DELTA)  )
+
+        # Apply gain, which is usually done in the N function
+
+        v_x *= self.P_GAIN
+        v_y *= self.P_GAIN
+        v_z *= self.P_GAIN
         """
 
+        # """
         # normal and alpha from boundary and ramp function
         n, a = self.get_closest_boundary_normal(coordinates)
         v_x = (self.get_N((x,y+self.DELTA,z), a, n)[2] - self.get_N((x,y-self.DELTA,z), a, n)[2])
@@ -147,7 +169,9 @@ class VelocityField:
         v_z = (self.get_N((x+self.DELTA,y,z), a, n)[1] - self.get_N((x-self.DELTA,y,z), a, n)[1])
         v_z = v_z - (self.get_N((x,y+self.DELTA,z), a, n)[0] - self.get_N((x,y-self.DELTA,z), a, n)[0])
         v_z = v_z / ( 2.0 * float(self.DELTA) )
+        # """
 
+        if self.DEBUG: print(f"/////////////////////")
         if self.DEBUG: print(f"velocity vector:({v_x},{v_y},{v_z})")
         return (v_x, v_y, v_z)
 
@@ -185,12 +209,20 @@ class VelocityField:
         P = np.array([p_x * self.P_GAIN , p_y * self.P_GAIN, p_z * self.P_GAIN])
         P_abs = np.array([np.abs(p_x * self.P_GAIN) , np.abs(p_y * self.P_GAIN), np.abs(p_z * self.P_GAIN)])
         normal = np.array(normal)
-        if self.DEBUG: print("---------------")
-        if self.DEBUG: print(f"P Before:{P}")
-        if self.DEBUG: print(f"normal Before:{normal}")
-        if self.DEBUG: print(f"alpha before: {alpha}")
-        N = alpha * P + ((1.0 - alpha) * np.dot(normal, P_abs) * normal)
-        if self.DEBUG: print(f"N: {N}")
+        normal[normal < 0] = -1.
+        normal[normal > 0] = 1.
+        # if self.DEBUG: print(f"{alpha} * ({P[0]}, {P[1]}, {P[2]}) + {1.0 - alpha} * {np.dot(normal,P_abs)} * {normal}")
+        if self.DEBUG: print(f"-----------")
+        if self.DEBUG: print(f"{alpha} * ({P}) + {1.0 - alpha} * {P_abs} * {normal}")
+        if self.DEBUG: print(f"{alpha} * ({P}) + {1.0 - alpha} * {P_abs * normal}")
+        # if self.DEBUG: print("---------------")
+        # if self.DEBUG: print(f"P Before:{P}")
+        # if self.DEBUG: print(f"normal Before:{normal}")
+        # if self.DEBUG: print(f"alpha before: {alpha}")
+        # New variant
+        # N = alpha * P + ((1.0 - alpha) * np.dot(normal, P_abs) * normal)
+        N = alpha * P + ((1.0 - alpha) * (P_abs * normal))
+        # if self.DEBUG: print(f"N: {N}")
         return N
 
     def round_velocity_vector(self, vel_vec):
@@ -353,25 +385,25 @@ def generate_perlin_noise_3d(shape, res, print_progress=False):
 
 def main():
     shape = (128, 128, 128)
-    precalculate_values(shape)
-    quit()
-    res = (4,4,4)
-    noise = generate_perlin_noise_3d(shape, res)
-    print(noise.shape)
+    # precalculate_values(shape)
+    # quit()
+    # res = (4,4,4)
+    # noise = generate_perlin_noise_3d(shape, res)
+    # print(noise.shape)
 
-    fig = plt.figure()
-    images = [[plt.imshow(layer, cmap='gray', interpolation='lanczos', animated=True)] for layer in noise]
-    ani = animation.ArtistAnimation(fig, images, interval=50, blit=True)
-    plt.show()
+    # fig = plt.figure()
+    # images = [[plt.imshow(layer, cmap='gray', interpolation='lanczos', animated=True)] for layer in noise]
+    # ani = animation.ArtistAnimation(fig, images, interval=50, blit=True)
+    # plt.show()
 
-    shape = (128, 128, 128)
-    res = (1,4,4)
-    noise = generate_perlin_noise_3d(shape, res)
+    # shape = (128, 128, 128)
+    # res = (1,4,4)
+    # noise = generate_perlin_noise_3d(shape, res)
 
-    fig = plt.figure()
-    images = [[plt.imshow(layer, cmap='gray', interpolation='lanczos', animated=True)] for layer in noise]
-    ani = animation.ArtistAnimation(fig, images, interval=50, blit=True)
-    plt.show()
+    # fig = plt.figure()
+    # images = [[plt.imshow(layer, cmap='gray', interpolation='lanczos', animated=True)] for layer in noise]
+    # ani = animation.ArtistAnimation(fig, images, interval=50, blit=True)
+    # plt.show()
 
 if __name__ == '__main__':
     main()

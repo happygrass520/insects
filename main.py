@@ -30,6 +30,7 @@ class Insect:
         new_x = current_x + move_x
         new_y = current_y + move_y
         new_z = current_z + move_z
+        # Testing with removing this check
         if new_x < 0.0 or new_x > self.bound_x - 1.0:
             new_x = current_x - move_x
         if new_y < 0.0 or new_y > self.bound_y - 1.0:
@@ -63,6 +64,7 @@ def main():
     parser.add_argument('--elevation', type=int, default=6)
     parser.add_argument('--zoom', type=float, default=0.0)
     parser.add_argument('--show_debug_grid', action='store_true')
+    parser.add_argument('--plot_vec_field', action='store_true')
     parser.add_argument('--yes_to_all', action='store_true')
     args = parser.parse_args()
 
@@ -72,13 +74,16 @@ def main():
     bound_z = args.dimZ
 
     # v_f = VelocityField(None, None, None, bound_x, bound_y, bound_z)
-    # v_f.plot_vec_field(step_size=1)
     # Load or generate perlin noise
     p_x, p_y, p_z = perlin_values((bound_x, bound_y, bound_z), args.perlin_load_path, args.perlin_save_path, args.yes_to_all)
 
     v_f = VelocityField(p_x, p_y, p_z, bound_x, bound_y, bound_z)
 
-    # v_f.plot_alpha_ramp()
+    if args.plot_vec_field:
+        # v_f.plot_vec_field(step_size=16)
+        v_f.plot_alpha_ramp()
+        v_f.plot_vec_field(step_size=2)
+
     # v_f.plot_vec_field(step_size=32)
     # v_f.plot_vec_field(step_size=1)
 
@@ -262,12 +267,12 @@ def generate_image(x_vals, y_vals, z_vals, elevation, xy_angle, zoom, show_debug
     dpi = 10
     side_size = 12.8
     # side_size = 25.6
-    fig = plt.figure(figsize=(side_size, side_size), dpi=dpi)
-    # fig = plt.figure()
+    # fig = plt.figure(figsize=(side_size, side_size), dpi=dpi)
+    fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
-    ax.set_xlim(0,256)
-    ax.set_ylim(0,256)
-    ax.set_zlim(0,256)
+    ax.set_xlim(0,128)
+    ax.set_ylim(0,128)
+    ax.set_zlim(0,128)
     if show_debug_grid:
         ax.scatter(x_vals, y_vals, z_vals, depthshade=True)
     else:
@@ -287,8 +292,8 @@ def save_image_from_grid(x_vals, y_vals, z_vals, elevation=-19, xy_angle=67, zoo
     ax, fig = generate_image(x_vals, y_vals, z_vals, elevation, xy_angle, zoom, show_debug_grid)
     # plt.savefig(filename, dpi=dpi, edgecolor='xkcd:black', facecolor='xkcd:black')
     # plt.savefig(filename, edgecolor='xkcd:black', facecolor='xkcd:black')
-    # plt.savefig(filename)
-    plt.savefig(filename, dpi=10)
+    plt.savefig(filename)
+    # plt.savefig(filename, dpi=10)
     # plt.show()
     plt.close(fig)
 
