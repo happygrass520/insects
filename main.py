@@ -52,8 +52,11 @@ def main():
     parser = argparse.ArgumentParser()
     # parser.add_argument('datafile', type=os.path.abspath)
     parser.add_argument('-o', '--output', type=os.path.abspath)
-    # parser.add_argument('-f', '--framerate', type=int, default=25)
     parser.add_argument('--frames', type=int, default=150)
+    parser.add_argument('--framerate', type=int, default=25)
+    parser.add_argument('--save_images', action='store_true')
+    parser.add_argument('--save_images_path', type=os.path.abspath)
+    parser.add_argument('--bugs', type=int, default=10)
     parser.add_argument('--dimX', type=int, default=128)
     parser.add_argument('--dimY', type=int, default=128)
     parser.add_argument('--dimZ', type=int, default=128)
@@ -69,6 +72,8 @@ def main():
     parser.add_argument('--plot_alpha', action='store_true')
     parser.add_argument('--yes_to_all', action='store_true')
     parser.add_argument('--append_params_to_name', action='store_true')
+    parser.add_argument('--number_perlin_fields', type=int, default=1)
+    parser.add_argument('--switch_fields_every_frame', type=int, default=10)
     args = parser.parse_args()
 
     no_frames = args.frames
@@ -76,11 +81,18 @@ def main():
     bound_y = args.dimY
     bound_z = args.dimZ
 
+    # Create several v_f for use
+    # The last one created is the one for which we use the settings
+    vector_fields = []
+    for i in range(args.number_perlin_fields):
+        p_x, p_y, p_z = perlin_values((bound_x, bound_y, bound_z), args.perlin_load_path, args.perlin_save_path, args.yes_to_all, field_index=i)
+        v_f = VelocityField(p_x, p_y, p_z, bound_x, bound_y, bound_z)
+        vector_fields.append(v_f)
+
     # v_f = VelocityField(None, None, None, bound_x, bound_y, bound_z)
     # Load or generate perlin noise
-    p_x, p_y, p_z = perlin_values((bound_x, bound_y, bound_z), args.perlin_load_path, args.perlin_save_path, args.yes_to_all)
 
-    v_f = VelocityField(p_x, p_y, p_z, bound_x, bound_y, bound_z)
+    # v_f = VelocityField(p_x, p_y, p_z, bound_x, bound_y, bound_z)
 
     if args.debug_repl:
         v_f.debug_repl()
@@ -93,7 +105,7 @@ def main():
     # v_f.plot_vec_field(step_size=32)
     # v_f.plot_vec_field(step_size=1)
 
-    no_bugs = 10
+    no_bugs = args.bugs
     bugs = []
     for i in range(no_bugs):
         x = random.randint(0,bound_x - 1)
@@ -101,14 +113,19 @@ def main():
         z = random.randint(0,bound_z - 1)
         bugs.append(Insect((float(x),float(y),float(z)), float(bound_x), float(bound_y), float(bound_z), f"{i}"))
 
-    save_images_folder_obj = tempfile.TemporaryDirectory()
-    save_images_folder = save_images_folder_obj.name
+    if args.save_images:
+        save_images_folder = args.save_images_path
+    else:
+        save_images_folder_obj = tempfile.TemporaryDirectory()
+        save_images_folder = save_images_folder_obj.name
     # save_images_folder = 'images'
     if not os.path.isdir(save_images_folder):
         os.mkdir(save_images_folder)
 
     no_of_numbers = len(str(no_frames))
     frame_counter = 0
+    # Keep track of and change fields
+    vector_field_index = 0
     for frame in range(no_frames):
         frame = np.zeros((bound_x,bound_y,bound_z))
         print("Moving bugs...", end='')
@@ -117,7 +134,7 @@ def main():
             x,y,z = bug.get_rounded_position()
             frame[x, y, z] = 1
             # Move buggy
-            move_x, move_y, move_z = v_f.get_velocity(bug.get_rounded_position())
+            move_x, move_y, move_z = vector_fields[vector_field_index].get_velocity(bug.get_rounded_position())
             bug.move((move_x, move_y, move_z))
         print("Generating frame...", end='')
         x_vals, y_vals, z_vals = positions_from_grid(frame)
@@ -147,15 +164,20 @@ def main():
         print(f"Saved frame {frame_counter} as {filename}!\r", end='')
         # frame is done!
         frame_counter += 1
-
+        # Lets see if we want to switch fields
+        if frame_counter % args.switch_fields_every_frame == 0:
+            vector_field_index += 1
+            vector_field_index = vector_field_index % args.number_perlin_fields
     if args.append_params_to_name:
-        extra_params = f"-dim-{args.dimX}x{args.dimY}x{args.dimZ}-d_0-{v_f.D_0}-P_GAIN-{v_f.P_GAIN}"
+        extra_params = f"-bugs-{no_bugs}-dim-{args.dimX}x{args.dimY}x{args.dimZ}-fields-{args.number_perlin_fields}-d_0-{v_f.D_0}-P_GAIN-{v_f.P_GAIN}"
         args.output = f"{args.output}{extra_params}.avi"
-    save_video_from_grid(save_images_folder, 25, args.output)
+    save_video_from_grid(save_images_folder, args.framerate, args.output)
 
-    print(f"Cleaning up temporary folder {save_images_folder}...")
-    save_images_folder_obj.cleanup()
-    print("Cleanup done.")
+    if not args.save_images:
+        print(f"Cleaning up temporary folder {save_images_folder}...")
+        save_images_folder_obj.cleanup()
+        print("Cleanup done.")
+    print(f"{args.output}")
 
 def save_video_from_grid(frames_folder, framerate, video_filename):
     # generate video
@@ -169,29 +191,37 @@ def save_video_from_grid(frames_folder, framerate, video_filename):
             'glob', # ...set to global
             f"-i", # Pattern to use when ...
             f"'{frames_folder}/*.png'", # ...looking for image files
+            '-s', # Set size
+            '128x128', #
             f"{video_filename}", # Where to save
             ]
     print(f"Running command '{' '.join(commands)}'")
     subprocess.run(' '.join(commands), shell=True)
     print("Done generating video!")
 
-def save_perlin_noise(folder, filename, p, dimension):
+def save_perlin_noise(folder, filename, p, dimension, index=0):
     if not os.path.isdir(folder):
         os.mkdir(folder)
-    with open(f'{folder}/{filename}_{dimension}.perlin', 'wb') as f:
+    with open(perlin_filename(folder,filename,dimension,index), 'wb') as f:
         pickle.dump(p, f)
 
-def load_perlin_noise(folder, filename, dimension):
+def load_perlin_noise(folder, filename, dimension, index=0):
     loaded_p = None
     try:
-        with open(f'{folder}/{filename}_{dimension}.perlin', 'rb') as f:
+        with open(perlin_filename(folder,filename,dimension,index), 'rb') as f:
             loaded_p = pickle.load(f)
         return loaded_p
     except OSError:
         # We couldnt find it
         return None
 
-def perlin_values(bounds, load_path, save_path, yes_to_all):
+def perlin_filename(folder,filename,dimension,index):
+    if index == 0:
+        return f'{folder}/{filename}_{dimension}.perlin'
+    else:
+        return f'{folder}/{filename}_{dimension}_{index}.perlin'
+
+def perlin_values(bounds, load_path, save_path, yes_to_all, field_index=0):
     # Define defaults
     # Resolution for perlin noise.. maybe
     # res = (4,4,4)
@@ -207,7 +237,7 @@ def perlin_values(bounds, load_path, save_path, yes_to_all):
     # Lets see if we can load any!
     if load_path is not None:
         print("Trying to load p_x...")
-        l_p_x = load_perlin_noise(load_path, 'p_x', b_x)
+        l_p_x = load_perlin_noise(load_path, 'p_x', b_x,index=field_index)
         if l_p_x is None:
             print(f"Could not load p_x for {b_x}, creating...")
             l_p_x = generate_perlin_noise_3d(bounds,res)
@@ -219,7 +249,7 @@ def perlin_values(bounds, load_path, save_path, yes_to_all):
         p_x = l_p_x
 
         print("Trying to load p_y...")
-        l_p_y = load_perlin_noise(load_path, 'p_y', b_y)
+        l_p_y = load_perlin_noise(load_path, 'p_y', b_y,index=field_index)
         if l_p_y is None:
             print(f"Could not load p_y for {b_y}, creating...")
             l_p_y = generate_perlin_noise_3d(bounds,res)
@@ -231,7 +261,7 @@ def perlin_values(bounds, load_path, save_path, yes_to_all):
         p_y = l_p_y
 
         print("Trying to load p_z...")
-        l_p_z = load_perlin_noise(load_path, 'p_z', b_z)
+        l_p_z = load_perlin_noise(load_path, 'p_z', b_z,index=field_index)
         if l_p_z is None:
             print(f"Could not load p_z for {b_z},creating...")
             l_p_z = generate_perlin_noise_3d(bounds,res)
@@ -244,9 +274,13 @@ def perlin_values(bounds, load_path, save_path, yes_to_all):
     else:
         # We have to create p_x, p_y, p_z because they
         # dont exist yet
+        print(f"Creating new fields!")
         p_x = generate_perlin_noise_3d(bounds,res)
+        print(f"p_x - {field_index} done...")
         p_y = generate_perlin_noise_3d(bounds,res)
+        print(f"p_y - {field_index} done...")
         p_z = generate_perlin_noise_3d(bounds,res)
+        print(f"p_z - {field_index} done!")
     # now we know that p_[x,y,z] are filled with values
     # Lets see if we wanna save it
     if save_path is not None:
@@ -254,26 +288,26 @@ def perlin_values(bounds, load_path, save_path, yes_to_all):
             print("p_x was loaded, skipping save...")
         else:
             print("Saving p_x...")
-            save_perlin_noise(save_path, 'p_x', p_x, b_x)
+            save_perlin_noise(save_path, 'p_x', p_x, b_x,index=field_index)
             print("Saved!")
         if loaded_p_y:
             print("p_y was loaded, skipping save...")
         else:
             print("Saving p_y...")
-            save_perlin_noise(save_path, 'p_y', p_y, b_y)
+            save_perlin_noise(save_path, 'p_y', p_y, b_y,index=field_index)
             print("Saved!")
         if loaded_p_z:
             print("p_z was loaded, skipping save...")
         else:
             print("Saving p_z...")
-            save_perlin_noise(save_path, 'p_z', p_z, b_z)
+            save_perlin_noise(save_path, 'p_z', p_z, b_z,index=field_index)
             print("Saved!")
 
     return p_x, p_y, p_z
 
 def generate_image(x_vals, y_vals, z_vals, elevation, xy_angle, zoom, show_debug_grid):
-    dpi = 10
-    side_size = 12.8
+    # dpi = 10
+    # side_size = 12.8
     # side_size = 25.6
     # fig = plt.figure(figsize=(side_size, side_size), dpi=dpi)
     fig = plt.figure()
@@ -284,7 +318,9 @@ def generate_image(x_vals, y_vals, z_vals, elevation, xy_angle, zoom, show_debug
     if show_debug_grid:
         ax.scatter(x_vals, y_vals, z_vals, depthshade=True)
     else:
-        ax.scatter(x_vals, y_vals, z_vals, c='white', depthshade=True)
+        # ax.scatter(x_vals, y_vals, z_vals, c='white', depthshade=True)
+        # False better represents how the data looks
+        ax.scatter(x_vals, y_vals, z_vals, c='white', depthshade=False)
     ax.view_init(elev=elevation, azim=xy_angle)
     if zoom > 0:
         ax.margins(zoom, zoom, zoom)
@@ -299,8 +335,8 @@ def generate_image(x_vals, y_vals, z_vals, elevation, xy_angle, zoom, show_debug
 def save_image_from_grid(x_vals, y_vals, z_vals, elevation=-19, xy_angle=67, zoom=0, filename=None, show_debug_grid=False):
     ax, fig = generate_image(x_vals, y_vals, z_vals, elevation, xy_angle, zoom, show_debug_grid)
     # plt.savefig(filename, dpi=dpi, edgecolor='xkcd:black', facecolor='xkcd:black')
-    # plt.savefig(filename, edgecolor='xkcd:black', facecolor='xkcd:black')
-    plt.savefig(filename)
+    plt.savefig(filename, edgecolor='xkcd:black', facecolor='xkcd:black')
+    # plt.savefig(filename)
     # plt.savefig(filename, dpi=10)
     # plt.show()
     plt.close(fig)
