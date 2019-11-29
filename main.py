@@ -308,13 +308,14 @@ def perlin_values(bounds, load_path, save_path, yes_to_all, field_index=0):
 def generate_image(x_vals, y_vals, z_vals, elevation, xy_angle, zoom, show_debug_grid):
     # dpi = 10
     # side_size = 12.8
-    # side_size = 25.6
+    side_size = 6.4
+    fig = plt.figure(figsize=(side_size, side_size))
     # fig = plt.figure(figsize=(side_size, side_size), dpi=dpi)
-    fig = plt.figure()
+    # fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
-    ax.set_xlim(0,128)
-    ax.set_ylim(0,128)
-    ax.set_zlim(0,128)
+    # ax.set_xlim(0,128)
+    # ax.set_ylim(0,128)
+    # ax.set_zlim(0,128)
     if show_debug_grid:
         ax.scatter(x_vals, y_vals, z_vals, depthshade=True)
     else:
