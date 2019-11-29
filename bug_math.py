@@ -15,16 +15,16 @@ class VelocityField:
     # In the ramp function, this is used to 
     # amplify the approach to a boundary
     # D_0 = 3.0
-    # D_0 = 32.0
-    D_0 = 64.0
+    D_0 = 32.0
+    # D_0 = 64.0
     # P_GAIN = 400.0
     # P_GAIN = 100.0
     # P_GAIN = 4.0
     # P_GAIN = 8.0
     # P_GAIN = 16.0
-    P_GAIN = 50.0
+    # P_GAIN = 50.0
     # P_GAIN = 100.0
-    # P_GAIN = 75.0
+    P_GAIN = 75.0
     # DEBUG = True
     DEBUG = False
 

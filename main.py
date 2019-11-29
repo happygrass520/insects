@@ -49,31 +49,30 @@ class Insect:
 
 def main():
     # argparse
-    parser = argparse.ArgumentParser()
-    # parser.add_argument('datafile', type=os.path.abspath)
-    parser.add_argument('-o', '--output', type=os.path.abspath)
-    parser.add_argument('--frames', type=int, default=150)
-    parser.add_argument('--framerate', type=int, default=25)
-    parser.add_argument('--save_images', action='store_true')
-    parser.add_argument('--save_images_path', type=os.path.abspath)
-    parser.add_argument('--bugs', type=int, default=10)
-    parser.add_argument('--dimX', type=int, default=128)
-    parser.add_argument('--dimY', type=int, default=128)
-    parser.add_argument('--dimZ', type=int, default=128)
-    parser.add_argument('--perlin_load_path', type=os.path.abspath)
-    parser.add_argument('--perlin_save_path', type=os.path.abspath)
-    parser.add_argument('--one_frame', action='store_true', help='Shows one frame and then quits')
-    parser.add_argument('--angle', type=int, default=40)
-    parser.add_argument('--elevation', type=int, default=6)
-    parser.add_argument('--zoom', type=float, default=0.0)
-    parser.add_argument('--show_debug_grid', action='store_true')
-    parser.add_argument('--plot_vec_field', action='store_true')
-    parser.add_argument('--debug_repl', action='store_true')
-    parser.add_argument('--plot_alpha', action='store_true')
-    parser.add_argument('--yes_to_all', action='store_true')
-    parser.add_argument('--append_params_to_name', action='store_true')
-    parser.add_argument('--number_perlin_fields', type=int, default=1)
-    parser.add_argument('--switch_fields_every_frame', type=int, default=10)
+    parser = argparse.ArgumentParser(description='Generate some insects flying infront of the camera')
+    parser.add_argument('-o', '--output', type=os.path.abspath, help='filename (without extenstion) for the finished .avi file')
+    parser.add_argument('--frames', type=int, default=150, help='How many frames to generate')
+    parser.add_argument('--framerate', type=int, default=25, help='What framerate to generate the video with')
+    parser.add_argument('--save_images', action='store_true', help='If true, images are saved to a permanent folder, otherwise tempfolder is used')
+    parser.add_argument('--save_images_path', type=os.path.abspath, help='Where to save the images')
+    parser.add_argument('--bugs', type=int, default=10, help='How many bugs to render')
+    parser.add_argument('--dimX', type=int, default=128, help='Define dimension of the X axis')
+    parser.add_argument('--dimY', type=int, default=128, help='Define dimension of the Y axis')
+    parser.add_argument('--dimZ', type=int, default=128, help='Define dimension of the Z axis')
+    parser.add_argument('--perlin_load_path', type=os.path.abspath, help='Folder to look for saved perlin files')
+    parser.add_argument('--perlin_save_path', type=os.path.abspath, help='Folder to save perlin files in')
+    parser.add_argument('--one_frame', action='store_true', help='Shows one frame and then quits - for debugging')
+    parser.add_argument('--angle', type=int, default=40, help='Passed to pyplot')
+    parser.add_argument('--elevation', type=int, default=6, help='Passed to pyplot')
+    parser.add_argument('--zoom', help='Pyplot zoom - define start-end on axis as ints (ex --zoom 130-170). Check what you want with --show_debug_grid and --one_frame')
+    parser.add_argument('--show_debug_grid', action='store_true', help='Show the axis and plot dimensions')
+    parser.add_argument('--plot_vec_field', action='store_true', help='Plots the vector field of the last Perlin field constructed, then quits - for debugging')
+    parser.add_argument('--debug_repl', action='store_true', help='Loads a repl for the last Perlin field constructed, then quits - for debugging')
+    parser.add_argument('--plot_alpha', action='store_true', help='Plot the alpha function from vector field, then quits')
+    parser.add_argument('--yes_to_all', action='store_true', help='Dont stop to ask questions, just go. !! Will overwrite things !!')
+    parser.add_argument('--append_params_to_name', action='store_true', help='Put a bunch of parameters in the name of the file, to keep track of how it was generated')
+    parser.add_argument('--number_perlin_fields', type=int, default=1, help='How many perlin fields to use')
+    parser.add_argument('--switch_fields_every_frame', type=int, default=10, help='Every x frame switch perlin field to the next one')
     args = parser.parse_args()
 
     no_frames = args.frames
@@ -89,21 +88,12 @@ def main():
         v_f = VelocityField(p_x, p_y, p_z, bound_x, bound_y, bound_z)
         vector_fields.append(v_f)
 
-    # v_f = VelocityField(None, None, None, bound_x, bound_y, bound_z)
-    # Load or generate perlin noise
-
-    # v_f = VelocityField(p_x, p_y, p_z, bound_x, bound_y, bound_z)
-
     if args.debug_repl:
         v_f.debug_repl()
     if args.plot_alpha:
         v_f.plot_alpha_ramp()
     if args.plot_vec_field:
         v_f.plot_vec_field(step_size=32)
-        # v_f.plot_vec_field(step_size=2)
-
-    # v_f.plot_vec_field(step_size=32)
-    # v_f.plot_vec_field(step_size=1)
 
     no_bugs = args.bugs
     bugs = []
@@ -118,7 +108,6 @@ def main():
     else:
         save_images_folder_obj = tempfile.TemporaryDirectory()
         save_images_folder = save_images_folder_obj.name
-    # save_images_folder = 'images'
     if not os.path.isdir(save_images_folder):
         os.mkdir(save_images_folder)
 
@@ -224,7 +213,6 @@ def perlin_filename(folder,filename,dimension,index):
 def perlin_values(bounds, load_path, save_path, yes_to_all, field_index=0):
     # Define defaults
     # Resolution for perlin noise.. maybe
-    # res = (4,4,4)
     res = (8,8,8)
     b_x, b_y, b_z = bounds
     p_x = None
@@ -306,16 +294,16 @@ def perlin_values(bounds, load_path, save_path, yes_to_all, field_index=0):
     return p_x, p_y, p_z
 
 def generate_image(x_vals, y_vals, z_vals, elevation, xy_angle, zoom, show_debug_grid):
-    # dpi = 10
-    # side_size = 12.8
     side_size = 6.4
     fig = plt.figure(figsize=(side_size, side_size))
-    # fig = plt.figure(figsize=(side_size, side_size), dpi=dpi)
-    # fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
-    # ax.set_xlim(0,128)
-    # ax.set_ylim(0,128)
-    # ax.set_zlim(0,128)
+    if zoom is not None:
+        lower = int(zoom.split('-')[0])
+        upper = int(zoom.split('-')[1])
+        ax.set_xlim(lower,upper)
+        ax.set_ylim(lower,upper)
+        ax.set_zlim(lower,upper)
+
     if show_debug_grid:
         ax.scatter(x_vals, y_vals, z_vals, depthshade=True)
     else:
@@ -323,32 +311,23 @@ def generate_image(x_vals, y_vals, z_vals, elevation, xy_angle, zoom, show_debug
         # False better represents how the data looks
         ax.scatter(x_vals, y_vals, z_vals, c='white', depthshade=False)
     ax.view_init(elev=elevation, azim=xy_angle)
-    if zoom > 0:
-        ax.margins(zoom, zoom, zoom)
     if not show_debug_grid:
         ax.grid(False)
         ax.axis('off')
         ax.set_facecolor('xkcd:black')
         fig.set_facecolor('xkcd:black')
+    # make it tight
+    fig.tight_layout()
     return ax, fig
 
 # def save_image_from_grid(x_vals, y_vals, z_vals, elevation=30, xy_angle=-60, zoom=0, filename=None):
-def save_image_from_grid(x_vals, y_vals, z_vals, elevation=-19, xy_angle=67, zoom=0, filename=None, show_debug_grid=False):
+def save_image_from_grid(x_vals, y_vals, z_vals, elevation=-19, xy_angle=67, zoom=None, filename=None, show_debug_grid=False):
     ax, fig = generate_image(x_vals, y_vals, z_vals, elevation, xy_angle, zoom, show_debug_grid)
-    # plt.savefig(filename, dpi=dpi, edgecolor='xkcd:black', facecolor='xkcd:black')
     plt.savefig(filename, edgecolor='xkcd:black', facecolor='xkcd:black')
-    # plt.savefig(filename)
-    # plt.savefig(filename, dpi=10)
-    # plt.show()
     plt.close(fig)
 
-def show_image_from_grid(x_vals, y_vals, z_vals, elevation=-19, xy_angle=67, zoom=0, filename=None, show_debug_grid=False):
+def show_image_from_grid(x_vals, y_vals, z_vals, elevation=-19, xy_angle=67, zoom=None, filename=None, show_debug_grid=False):
     ax, fig = generate_image(x_vals, y_vals, z_vals, elevation, xy_angle, zoom, show_debug_grid)
-    # plt.savefig(filename, dpi=dpi, edgecolor='xkcd:black', facecolor='xkcd:black')
-    # plt.savefig(filename, edgecolor='xkcd:black', facecolor='xkcd:black')
-    # plt.savefig(filename)
-    # plt.savefig(filename, dpi=10)
-    # plt.show(dpi=10)
     plt.show()
     plt.close(fig)
 
