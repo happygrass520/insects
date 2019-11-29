@@ -19,10 +19,10 @@ class VelocityField:
     D_0 = 64.0
     # P_GAIN = 400.0
     # P_GAIN = 100.0
-    P_GAIN = 4.0
+    # P_GAIN = 4.0
     # P_GAIN = 8.0
     # P_GAIN = 16.0
-    # P_GAIN = 50.0
+    P_GAIN = 50.0
     # P_GAIN = 100.0
     # P_GAIN = 75.0
     # DEBUG = True

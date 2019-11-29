@@ -107,7 +107,6 @@ def main():
     if not os.path.isdir(save_images_folder):
         os.mkdir(save_images_folder)
 
-    # noise_gain = 200.0
     no_of_numbers = len(str(no_frames))
     frame_counter = 0
     for frame in range(no_frames):
@@ -119,13 +118,6 @@ def main():
             frame[x, y, z] = 1
             # Move buggy
             move_x, move_y, move_z = v_f.get_velocity(bug.get_rounded_position())
-            # print(f"move:({move_x}, {move_y}, {move_z})")
-            # print(bug)
-            # move_x = move_x * noise_gain
-            # move_y = move_y * noise_gain
-            # move_z = move_z * noise_gain
-            # move_x, move_y, move_z = v_f.round_velocity_vector((move_x, move_y, move_z))
-            # print(f"move rounding:({move_x}, {move_y}, {move_z})")
             bug.move((move_x, move_y, move_z))
         print("Generating frame...", end='')
         x_vals, y_vals, z_vals = positions_from_grid(frame)
@@ -202,7 +194,8 @@ def load_perlin_noise(folder, filename, dimension):
 def perlin_values(bounds, load_path, save_path, yes_to_all):
     # Define defaults
     # Resolution for perlin noise.. maybe
-    res = (4,4,4)
+    # res = (4,4,4)
+    res = (8,8,8)
     b_x, b_y, b_z = bounds
     p_x = None
     p_y = None
@@ -217,8 +210,8 @@ def perlin_values(bounds, load_path, save_path, yes_to_all):
         l_p_x = load_perlin_noise(load_path, 'p_x', b_x)
         if l_p_x is None:
             print(f"Could not load p_x for {b_x}, creating...")
-            # l_p_x = generate_perlin_noise_3d(bounds,res)
-            l_p_x = generate_random_noise_3d(bounds,res)
+            l_p_x = generate_perlin_noise_3d(bounds,res)
+            # l_p_x = generate_random_noise_3d(bounds,res)
             print("Done")
         else:
             print("Successful loading of p_x!")
@@ -229,8 +222,8 @@ def perlin_values(bounds, load_path, save_path, yes_to_all):
         l_p_y = load_perlin_noise(load_path, 'p_y', b_y)
         if l_p_y is None:
             print(f"Could not load p_y for {b_y}, creating...")
-            # l_p_y = generate_perlin_noise_3d(bounds,res)
-            l_p_y = generate_random_noise_3d(bounds,res)
+            l_p_y = generate_perlin_noise_3d(bounds,res)
+            # l_p_y = generate_random_noise_3d(bounds,res)
             print("Done")
         else:
             print("Successful loading of p_y!")
@@ -241,13 +234,19 @@ def perlin_values(bounds, load_path, save_path, yes_to_all):
         l_p_z = load_perlin_noise(load_path, 'p_z', b_z)
         if l_p_z is None:
             print(f"Could not load p_z for {b_z},creating...")
-            # l_p_z = generate_perlin_noise_3d(bounds,res)
-            l_p_z = generate_random_noise_3d(bounds,res)
+            l_p_z = generate_perlin_noise_3d(bounds,res)
+            # l_p_z = generate_random_noise_3d(bounds,res)
             print("Done")
         else:
             print("Successful loading of p_z!")
             loaded_p_z = True
         p_z = l_p_z
+    else:
+        # We have to create p_x, p_y, p_z because they
+        # dont exist yet
+        p_x = generate_perlin_noise_3d(bounds,res)
+        p_y = generate_perlin_noise_3d(bounds,res)
+        p_z = generate_perlin_noise_3d(bounds,res)
     # now we know that p_[x,y,z] are filled with values
     # Lets see if we wanna save it
     if save_path is not None:
