@@ -307,8 +307,6 @@ def generate_image(x_vals, y_vals, z_vals, elevation, xy_angle, zoom, show_debug
     if show_debug_grid:
         ax.scatter(x_vals, y_vals, z_vals, depthshade=True)
     else:
-        # ax.scatter(x_vals, y_vals, z_vals, c='white', depthshade=True)
-        # False better represents how the data looks
         ax.scatter(x_vals, y_vals, z_vals, c='white', depthshade=False)
     ax.view_init(elev=elevation, azim=xy_angle)
     if not show_debug_grid:

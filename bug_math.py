@@ -10,20 +10,10 @@ from pprint import pprint
 
 class VelocityField:
     # Constants for calculating potential
-    # DELTA = 0.0001
     DELTA = 1
     # In the ramp function, this is used to 
     # amplify the approach to a boundary
-    # D_0 = 3.0
     D_0 = 32.0
-    # D_0 = 64.0
-    # P_GAIN = 400.0
-    # P_GAIN = 100.0
-    # P_GAIN = 4.0
-    # P_GAIN = 8.0
-    # P_GAIN = 16.0
-    # P_GAIN = 50.0
-    # P_GAIN = 100.0
     P_GAIN = 75.0
     # DEBUG = True
     DEBUG = False
@@ -54,7 +44,6 @@ class VelocityField:
             print(f"Velocity vector: {vec}")
         print("Exited repl , quitting...")
         quit()
-
 
     def plot_alpha_ramp(self):
         # Max size that we send in is (bound / 2)
@@ -95,8 +84,6 @@ class VelocityField:
         total_values_calculated = 0
         average_time = 0.0
         total_time = 0.0
-        # cordsii = [ (x,x,x) for x in range(128) ]
-        # for (x,y,z) in cordsii:
         for (x,y,z) in itertools.product(range(shape_len),repeat=3):
             if total_values_calculated % 10 == 0:
                 percent_done = float(total_values_calculated) / float(total_values_to_calc) * 100.0
@@ -110,11 +97,9 @@ class VelocityField:
                 else:
                     time_string = 'seconds'
                 print(f"[{prog_string}{prog_rev_string}] ({percent_to_int}%) {time_left:.0f} {time_string} left...  \r", end='')
-                # print(f"Currently at:({x},{y},{z}) [{total_values_calculated}/{total_values_to_calc} = {percent_done}%]         \r", end='')
             time_start = time.time()
             u, v, w = self.get_velocity((x*step_size,y*step_size,z*step_size))
             vec = (u,v,w)
-            # print(f"co:({x}, {y}, {z})->({u:.2f}, {v:.2f}, {w:.2f})")
             X[total_values_calculated] = x
             Y[total_values_calculated] = y
             Z[total_values_calculated] = z
@@ -131,50 +116,14 @@ class VelocityField:
         fig = plt.figure()
         ax = fig.gca(projection='3d')
 
-        # ax.quiver3D(X,Y,Z,U,V,W, length=0.4, normalize=True)
+        ax.quiver3D(X,Y,Z,U,V,W, length=0.4, normalize=True)
         # ax.quiver3D(X,Y,Z,U,V,W, normalize=True)
-        ax.quiver3D(X,Y,Z,U,V,W)
+        # ax.quiver3D(X,Y,Z,U,V,W)
         plt.show()
         quit()
 
     def get_velocity(self, coordinates):
         x,y,z = coordinates
-
-        # if x == 0 or y == 0 or z ==  0 or x == 128 or y == 128 or z == 128:
-            # self.DEBUG = True
-        # else:
-            # self.DEBUG = False
-
-        # Old style, where P = N
-        """
-        bounds = self.p_x.shape[0]
-        if x < 0 or x >= bounds - 1:
-            return (0,0,0)
-        if y < 0 or y >= bounds - 1:
-            return (0,0,0)
-        if z < 0 or z >= bounds - 1:
-            return (0,0,0)
-        """
-
-        """
-        v_x = (self.p_z[x,y+self.DELTA,z] - self.p_z[x,y-self.DELTA,z])
-        v_x = v_x - (self.p_y[x,y,z+self.DELTA] - self.p_y[x,y,z-self.DELTA])
-        v_x = v_x / ( 2.0 * float(self.DELTA) )
-
-        v_y = (self.p_x[x,y,z+self.DELTA] - self.p_x[x,y,z-self.DELTA])
-        v_y = v_y - (self.p_z[x+self.DELTA,y,z] - self.p_z[x-self.DELTA,y,z])
-        v_y = v_y / ( 2.0 * float(self.DELTA) )
-
-        v_z = (self.p_y[x+self.DELTA,y,z] - self.p_y[x-self.DELTA,y,z])
-        v_z = v_z - (self.p_x[x,y+self.DELTA,z] - self.p_x[x,y-self.DELTA,z])
-        v_z = v_z / ( 2.0 * float(self.DELTA)  )
-
-        # Apply gain, which is usually done in the N function
-
-        v_x *= self.P_GAIN
-        v_y *= self.P_GAIN
-        v_z *= self.P_GAIN
-        """
 
         # """
         # normal and alpha from boundary and ramp function
@@ -233,21 +182,14 @@ class VelocityField:
         normal = np.array(normal)
         normal[normal < 0] = -1.
         normal[normal > 0] = 1.
-        # if self.DEBUG: print(f"{alpha} * ({P[0]}, {P[1]}, {P[2]}) + {1.0 - alpha} * {np.dot(normal,P_abs)} * {normal}")
         if self.DEBUG: print(f"-----------")
         if self.DEBUG: print(f"{alpha} * ({P}) + {1.0 - alpha} * {P_abs} * {normal}")
         if self.DEBUG: print(f"{alpha} * ({P}) + {1.0 - alpha} * {P_abs * normal}")
-        # if self.DEBUG: print("---------------")
-        # if self.DEBUG: print(f"P Before:{P}")
-        # if self.DEBUG: print(f"normal Before:{normal}")
-        # if self.DEBUG: print(f"alpha before: {alpha}")
         # New variant
-        # N = alpha * P + ((1.0 - alpha) * np.dot(normal, P_abs) * normal)
         N = alpha * P + ((1.0 - alpha) * (P_abs * normal))
         N_magn = np.linalg.norm(N)
 
         if self.DEBUG: print(f"|P| = {P_magn} |N| = {N_magn}")
-        # if self.DEBUG: print(f"N: {N}")
         return N
 
     def round_velocity_vector(self, vel_vec):
@@ -269,18 +211,15 @@ class VelocityField:
         if x < 0:
             x = 0
         elif x >= limit_x:
-            # x = limit_x - 1
             x = limit_x
         if y < 0:
             y = 0
         elif y >= limit_y:
-            # y = limit_y - 1
             y = limit_y
         if z < 0:
             z = 0
         elif z >= limit_z:
-            # z = limit_z - 1
-            z = limit_z 
+            z = limit_z
         # Prepare normals for each boundary surface
         # We are gonna create a normal that is always pointing into the swarm
         # i.e center of the thing
@@ -343,8 +282,6 @@ def precalculate_values(shape):
 def generate_random_noise_3d(shape, res):
     # Dont do anything with res...
     return np.random.uniform(low=-1., high=1.0, size=shape)
-
-
 
 def generate_perlin_noise_3d(shape, res, print_progress=False):
     """
@@ -431,28 +368,3 @@ def generate_perlin_noise_3d(shape, res, print_progress=False):
     n1 = (1-t[:,:,:,1])*n01 + t[:,:,:,1]*n11
     printer.print_progress()
     return ((1-t[:,:,:,2])*n0 + t[:,:,:,2]*n1)
-
-def main():
-    shape = (128, 128, 128)
-    # precalculate_values(shape)
-    # quit()
-    # res = (4,4,4)
-    # noise = generate_perlin_noise_3d(shape, res)
-    # print(noise.shape)
-
-    # fig = plt.figure()
-    # images = [[plt.imshow(layer, cmap='gray', interpolation='lanczos', animated=True)] for layer in noise]
-    # ani = animation.ArtistAnimation(fig, images, interval=50, blit=True)
-    # plt.show()
-
-    # shape = (128, 128, 128)
-    # res = (1,4,4)
-    # noise = generate_perlin_noise_3d(shape, res)
-
-    # fig = plt.figure()
-    # images = [[plt.imshow(layer, cmap='gray', interpolation='lanczos', animated=True)] for layer in noise]
-    # ani = animation.ArtistAnimation(fig, images, interval=50, blit=True)
-    # plt.show()
-
-if __name__ == '__main__':
-    main()
